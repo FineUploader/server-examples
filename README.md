@@ -1,4 +1,4 @@
-# Server-Side Notes & Requirements #
+# Server-Side Notes & Requirements - Version 3.1.1 #
 
 ## Handling the request (defaults) ##
 By default Fine Uploader will send the file in the body of a multipart encoded POST request.  The filename will be encoded in
@@ -7,7 +7,7 @@ content-disposition header of the file boundary will have a value of "blob" so y
 parameter in this case to determine the name of the associated file.  
 
 Note that each request contains a UUID parameter.  By default, the name of this parameter is `qquuid`, but this is configurable
-in the [`request` option section](../docs/options-fineuploaderbasic.md#request-option-properties).  This parameter value 
+in the [`request` option section](https://github.com/Widen/fine-uploader/tree/master/docs/options-fineuploaderbasic.md#request-option-properties).  This parameter value 
 should be used to uniquelyidentify the file, and the associationbetween this UUID and the file should be maintained 
 sever-side if you want to handle DELETE requests, the resume feature, or chunking.  
 
@@ -85,5 +85,4 @@ cors option documentation in the main readme.
 <br/>
 ###### WARNING ######
 The examples in the server directory, with the exception of the Java & PHP examples, were not provided by the those associated
-with Fine Uploader.  Use the examples at your own risk.  They may or may not work correctly and are NOT supported!  If
-you have a problem with one of these examples, please post in the [forum](https://groups.google.com/forum/#!forum/fineuploader).
+with Fine Uploader.  Use the examples at your own risk.  They may or may not work correctly and are NOT supported!
