@@ -1,4 +1,4 @@
-# Server-Side Notes & Requirements - Version 3.1.1 #
+# Server-Side Notes & Requirements #
 
 ## Handling the request (defaults) ##
 By default Fine Uploader will send the file in the body of a multipart encoded POST request.  The filename will be encoded in
@@ -86,3 +86,5 @@ cors option documentation in the main readme.
 ###### WARNING ######
 The examples in the server directory, with the exception of the Java & PHP examples, were not provided by the those associated
 with Fine Uploader.  Use the examples at your own risk.  They may or may not work correctly and are NOT supported!
+
+All server-side examples are MIT licensed.  Please see [license.txt](license.txt) for details.

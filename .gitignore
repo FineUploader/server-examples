@@ -1,0 +1,11 @@
+.*
+*.iml
+Thumbs.db
+!.gitignore
+test/uploads/
+test/uploadsTemp/
+*.ipr
+*~
+.*.sw[a-z]
+build/*
+release/*
