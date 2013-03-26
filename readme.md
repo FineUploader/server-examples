@@ -83,8 +83,9 @@ please see the [blog post on CORS support](http://blog.fineuploader.com/2013/01/
 cors option documentation in the main readme.
 
 <br/>
-###### WARNING ######
+#### Support ####
 The examples in the server directory, with the exception of the Java & PHP examples, were not provided by the those associated
 with Fine Uploader.  Use the examples at your own risk.  They may or may not work correctly and are NOT supported!
 
+#### License ####
 All server-side examples are MIT licensed.  Please see [license.txt](license.txt) for details.
