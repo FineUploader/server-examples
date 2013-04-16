@@ -4,6 +4,7 @@
  * You have to install additional modules with:
  * npm install express
  * npm install node-uuid
+ * npm install jade
  *
  * Express handles most of the heavy lifting of handling the multipart form parsing - all we have to do is establish an endpoint
  * to handle the incoming file
