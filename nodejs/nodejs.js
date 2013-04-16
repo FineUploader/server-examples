@@ -29,18 +29,20 @@ var express = require('express'),
 
 // Settings
 var settings = {
-    node_port: process.argv[2] || 3000,
+    node_port: process.argv[2] || 8000,
     uploadPath: __dirname + '/uploads/'
 };
+
+app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 
 app.use(express.bodyParser({uploadDir: settings.uploadPath}));
 
-app.get('upload', function(request, response) {
+app.get('/', function(request, response) {
     response.render('index');
 })
 
-app.post('/upload', function(request, response, next {
+app.post('/upload', function(request, response, next) {
     // as the uploadDir is simply a temporary save location, let's define a permanant place for 
     // uploads to be saved
 
@@ -49,7 +51,7 @@ app.post('/upload', function(request, response, next {
 
     //after upload, rename the file and respond to Fine Uploader to notify it of success
     fs.rename(request.files.qqfile.path, savePath + fileName, function(err) {
-	if err(!=null) {
+	if (err != null) {
 	    console.log('Err: ' + err);
 	    response.send(JSON.stringify({success: false, error: err}), {'Content-Type': 'text/plain'}, 404);
 	} 
@@ -59,7 +61,7 @@ app.post('/upload', function(request, response, next {
 	}
     })
     
-}));
+});
 
 
 
