@@ -6,6 +6,12 @@
  * npm install node-uuid
  * npm install jade
  *
+ * This code assumes that there is a uploads/ directory for storing the uploaded files, and that the fine-uploader code is available
+ * at public/fine-uploader/jquery
+ * 
+ *
+ * Based in part on Felix Gertz <dev@felixgertz.de> original example.
+ * Original comments follow:
  * Express handles most of the heavy lifting of handling the multipart form parsing - all we have to do is establish an endpoint
  * to handle the incoming file
  *
@@ -18,6 +24,7 @@
  * because the ajax upload script can not handle port instruction in the action url correctly. :(
  *
  * @Author: Felix Gertz <dev@felixgertz.de> 2012
+ * 
  */
 
 var express = require('express'),
@@ -45,10 +52,11 @@ app.get('/', function(request, response) {
 })
 
 app.post('/upload', function(request, response, next) {
-    // as the uploadDir is simply a temporary save location, let's define a permanant place for 
-    // uploads to be saved
+    // the uploadDir is typically used as a temp save location, but we are just going to use the same directory to
+    // store the final file.
 
-    var savePath = __dirname + '/files/';
+    var savePath = settings.uploadPath;
+
     var fileName = request.files.qqfile.name;
 
     //after upload, rename the file and respond to Fine Uploader to notify it of success
