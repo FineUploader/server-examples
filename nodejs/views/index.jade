@@ -1,0 +1,29 @@
+!!!
+html
+  head
+    block head
+      title Fine Uploader
+      link(rel='stylesheet', href='../fine-uploader-jquery/fineuploader-3.4.1.css')
+      script(src='//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js')
+      script(src='../fine-uploader-jquery/jquery.fineuploader-3.4.1.min.js')
+  body
+    block content
+      
+      div.container
+        div.row
+          Upload a file
+          #jquery-wrapped-fine-uploader
+            script(type='text/javascript')
+              jQuery(document).ready(function() {
+                debug: true,
+                request: {
+                  endpoint: '/upload',
+                  
+                  chunking: {
+                    enabled: true,
+                  },
+                  resume: {
+                    enabled: true,
+                  },
+              },
+  });
