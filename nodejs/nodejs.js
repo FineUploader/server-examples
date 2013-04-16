@@ -32,8 +32,13 @@ var settings = {
     node_port: process.argv[2] || 3000,
     uploadPath: __dirname + '/uploads/'
 };
+app.set('view engine', 'jade');
 
 app.use(express.bodyParser({uploadDir: settings.uploadPath}));
+
+app.get('upload', function(request, response) {
+    response.render('index');
+})
 
 app.post('/upload', function(request, response, next {
     // as the uploadDir is simply a temporary save location, let's define a permanant place for 
