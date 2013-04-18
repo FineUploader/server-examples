@@ -68,7 +68,7 @@ app.post('/upload', function(request, response, next) {
     fs.rename(request.files.qqfile.path, savePath + fileName, function(err) {
 	if (err != null) {
 	    console.log('Err: ' + err);
-	    response.send(JSON.stringify({success: false, error: err}), {'Content-Type': 'text/plain'}, 404);
+	    response.send(JSON.stringify({success: false, error: err}), {'Content-Type': 'text/plain'}, 200);
 	} 
 	else {
 	    response.send(JSON.stringify({success: true}), {'Content-Type': 'text/plain'}, 200);
