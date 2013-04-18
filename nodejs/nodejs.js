@@ -1,13 +1,15 @@
 /**
  * Node.JS server sample file.
+ * 
+ * 
  *
- * You have to install additional modules with:
+ * This code requires external modules, which can be downloaded with the following commands:
  * npm install express
  * npm install node-uuid
  * npm install jade
  *
- * This code assumes that there is a uploads/ directory for storing the uploaded files, and that the fine-uploader code is available
- * at public/fine-uploader/jquery
+ * This code assumes that there is a uploads/ directory for storing the uploaded files, and that the fine-uploader code 
+ * is available at public/fine-uploader/jquery
  * 
  *
  * Based in part on Felix Gertz <dev@felixgertz.de> original example.
@@ -18,12 +20,15 @@
  * If you are using NginX as reverse proxy, please set this in your server block:
  * client_max_body_size    200M;
  * 
- * You have to run the server endpoint on port 80,
- * either by an reverse proxy upstream to this script
- * or by run this script directly on port 80,
- * because the ajax upload script can not handle port instruction in the action url correctly. :(
+ * I don't believe the following is true any longer, as all my testing has been on 8000 - so perhaps needs further validation:
+ **
+ ** You have to run the server endpoint on port 80,
+ ** either by an reverse proxy upstream to this script
+ **  or by run this script directly on port 80,
+ ** because the ajax upload script can not handle port instruction in the action url correctly. :(
+ **
  *
- * @Author: Felix Gertz <dev@felixgertz.de> 2012
+ * @Author: Jeremy Dickens <jeremy@offnominal.com> 2013
  * 
  */
 
