@@ -64,7 +64,7 @@ class qqFileUploader {
         $folderInaccessible = ($isWin) ? !is_writable($uploadDirectory) : ( !is_writable($uploadDirectory) && !is_executable($uploadDirectory) );
 
         if ($folderInaccessible){
-            return array('error' => "Server error. Uploads directory isn't writable" . (!$isWin) ? " or executable." : ".");
+            return array('error' => "Server error. Uploads directory isn't writable" . ((!$isWin) ? " or executable." : "."));
         }
 
         if(!isset($_SERVER['CONTENT_TYPE'])) {
