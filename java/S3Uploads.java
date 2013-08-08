@@ -87,7 +87,7 @@ public class S3Uploads extends HttpServlet
 
                 // Validate the policy document to ensure the client hasn't tampered with it.
                 // If it has been tampered with, set this property on the response and set the status to a non-200 value.
-//                response.addProperty("badPolicy", true);
+//                response.addProperty("invalid", true);
 
                 response.addProperty("policy", base64Policy);
             }
