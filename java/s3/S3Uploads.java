@@ -1,4 +1,4 @@
-package fineuploader;
+package fineuploader.s3;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -20,8 +20,21 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Servlet used to handle various requests sent by Fine Uploader when using the "upload directly to S3" module.  The
- * delete file handler depends on the AWS Java SDK.
+ * Java Server-Side Example for Fine Uploader S3.
+ * Maintained by Widen Enterprises.
+ *
+ * This example:
+ *  - handles non-CORS environments
+ *  - handles delete file requests via the DELETE method
+ *  - signs policy documents (simple uploads) and REST requests
+ *    (chunked/multipart uploads)
+ *
+ * Requirements:
+ *  - Java 1.5 or newer
+ *  - Google GSon
+ *  - Amazon Java SDK (only if utilizing the delete file feature)
+ *
+ * If you need to install the AWS SDK, see http://docs.aws.amazon.com/aws-sdk-php-2/guide/latest/installation.html.
  */
 public class S3Uploads extends HttpServlet
 {
