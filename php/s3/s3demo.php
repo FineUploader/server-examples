@@ -15,6 +15,8 @@
  * Requirements:
  *  - PHP 5.3 or newer
  *  - Amazon PHP SDK (only if utilizing the delete file feature)
+ *
+ * If you need to install the AWS SDK, see http://docs.aws.amazon.com/aws-sdk-php-2/guide/latest/installation.html.
  */
 
 // You can remove these two lines if you are not using Fine Uploader's
