@@ -22,9 +22,10 @@
 require 'AWSSDKforPHP/aws.phar';
 use Aws\S3\S3Client;
 
-// These three lines assume you have the associated AWS keys stored in
+// These assume you have the associated AWS keys stored in
 // the associated system environment variables
 $clientPrivateKey = $_SERVER['AWS_SECRET_KEY'];
+// These two keys are only needed if the delete file feature is enabled
 $serverPublicKey = $_SERVER['PARAM1'];
 $serverPrivateKey = $_SERVER['PARAM2'];
 
