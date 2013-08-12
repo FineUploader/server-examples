@@ -120,14 +120,52 @@ function signRequest() {
 }
 
 function signRestRequest($headersStr) {
-    $response = array('signature' => sign($headersStr));
-    echo json_encode($response);
+    if (isValidRestRequest($headersStr)) {
+        $response = array('signature' => sign($headersStr));
+        echo json_encode($response);
+    }
+    else {
+        echo json_encode(array("invalid" => true));
+    }
+}
+
+function isValidRestRequest($headersStr) {
+    $pattern = '/\/upload.fineuploader.com\/.+$/';
+    preg_match($pattern, $headersStr, $matches);
+
+    return count($matches) > 0;
 }
 
 function signPolicy($policyStr) {
-    $encodedPolicy = base64_encode($policyStr);
-    $response = array('policy' => $encodedPolicy, 'signature' => sign($encodedPolicy));
-    echo json_encode($response);
+    $policyObj = json_decode($policyStr, true);
+
+    if (isPolicyValid($policyObj)) {
+        $encodedPolicy = base64_encode($policyStr);
+        $response = array('policy' => $encodedPolicy, 'signature' => sign($encodedPolicy));
+        echo json_encode($response);
+    }
+    else {
+        echo json_encode(array("invalid" => true));
+    }
+}
+
+function isPolicyValid($policy) {
+    $conditions = $policy["conditions"];
+    $bucket = null;
+    $maxSize = null;
+
+    for ($i = 0; $i < count($conditions); ++$i) {
+        $condition = $conditions[$i];
+
+        if (isset($condition["bucket"])) {
+            $bucket = $condition["bucket"];
+        }
+        else if (isset($condition[0]) && $condition[0] == "content-length-range") {
+            $maxSize = $condition[2];
+        }
+    }
+
+    return $bucket == "upload.fineuploader.com" && $maxSize == "15000000";
 }
 
 function sign($stringToSign) {
