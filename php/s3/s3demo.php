@@ -21,7 +21,7 @@
 
 // You can remove these two lines if you are not using Fine Uploader's
 // delete file feature
-require 'AWSSDKforPHP/aws.phar';
+require 'aws-autoloader.php';
 use Aws\S3\S3Client;
 
 // These assume you have the associated AWS keys stored in
