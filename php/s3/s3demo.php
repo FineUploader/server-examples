@@ -16,7 +16,7 @@
  *
  * Requirements:
  *  - PHP 5.3 or newer
- *  - Amazon PHP SDK (only if utilizing the delete file feature)
+ *  - Amazon PHP SDK (only if utilizing the AWS SDK for deleting files or otherwise examining them)
  *
  * If you need to install the AWS SDK, see http://docs.aws.amazon.com/aws-sdk-php-2/guide/latest/installation.html.
  */
@@ -30,6 +30,8 @@ use Aws\S3\S3Client;
 // the associated system environment variables
 $clientPrivateKey = $_SERVER['AWS_SECRET_KEY'];
 // These two keys are only needed if the delete file feature is enabled
+// or if you are, for example, confirming the file size in a successEndpoint
+// handler via S3's SDK, as we are doing in this example.
 $serverPublicKey = $_SERVER['PARAM1'];
 $serverPrivateKey = $_SERVER['PARAM2'];
 
