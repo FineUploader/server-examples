@@ -33,6 +33,9 @@ $clientPrivateKey = $_SERVER['AWS_SECRET_KEY'];
 $serverPublicKey = $_SERVER['PARAM1'];
 $serverPrivateKey = $_SERVER['PARAM2'];
 
+$expectedMaxSize = 15000000;
+$expectedBucket = "upload.fineuploader.com";
+
 $method = getRequestMethod();
 
 // This first conditional will only ever evaluate to true in a
@@ -51,6 +54,10 @@ else if ($method == "DELETE") {
 else if	($method == 'POST') {
     handlePreflightedRequest();
 
+    // Assumes the successEndpoint has a parameter of "success" associated with it,
+    // to allow the server to differentiate between a successEndpoint request
+    // and other POST requests (all requests are sent to the same endpoint in this example).
+    // This condition is not needed if you don't require a callback on upload success.
     if (isset($_REQUEST["success"])) {
         verifyFileInS3();
     }
@@ -138,7 +145,9 @@ function signRestRequest($headersStr) {
 }
 
 function isValidRestRequest($headersStr) {
-    $pattern = '/\/upload.fineuploader.com\/.+$/';
+    global $expectedBucket;
+
+    $pattern = "/\/$expectedBucket\/.+$/";
     preg_match($pattern, $headersStr, $matches);
 
     return count($matches) > 0;
@@ -158,9 +167,11 @@ function signPolicy($policyStr) {
 }
 
 function isPolicyValid($policy) {
+    global $expectedMaxSize, $expectedBucket;
+
     $conditions = $policy["conditions"];
     $bucket = null;
-    $maxSize = null;
+    $parsedMaxSize = null;
 
     for ($i = 0; $i < count($conditions); ++$i) {
         $condition = $conditions[$i];
@@ -169,11 +180,11 @@ function isPolicyValid($policy) {
             $bucket = $condition["bucket"];
         }
         else if (isset($condition[0]) && $condition[0] == "content-length-range") {
-            $maxSize = $condition[2];
+            $parsedMaxSize = $condition[2];
         }
     }
 
-    return $bucket == "upload.fineuploader.com" && $maxSize == "15000000";
+    return $bucket == $expectedBucket && $parsedMaxSize == (string)$expectedMaxSize;
 }
 
 function sign($stringToSign) {
@@ -187,7 +198,10 @@ function sign($stringToSign) {
         ));
 }
 
+// This is not needed if you don't require a callback on upload success.
 function verifyFileInS3() {
+    global $expectedMaxSize;
+
     $bucket = $_POST["bucket"];
     $key = $_POST["key"];
 
@@ -195,7 +209,7 @@ function verifyFileInS3() {
     // to ensure Fine Uploader can parse the error message in IE9 and IE8,
     // since XDomainRequest is used on those browsers for CORS requests.  XDomainRequest
     // does not allow access to the response body for non-success responses.
-    if (getObjectSize($bucket, $key) > 15000000) {
+    if (getObjectSize($bucket, $key) > $expectedMaxSize) {
         // You can safely uncomment this next line if you are not depending on CORS
         //header("HTTP/1.0 500 Internal Server Error");
         deleteObject();
