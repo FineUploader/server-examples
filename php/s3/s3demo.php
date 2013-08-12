@@ -9,6 +9,8 @@
  * This example:
  *  - handles both CORS and non-CORS environments
  *  - handles delete file requests for both DELETE and POST methods
+ *  - Performs basic inspections on the policy documents and REST headers before signing them
+ *  - Ensures again the file size does not exceed the max (after file is in S3)
  *  - signs policy documents (simple uploads) and REST requests
  *    (chunked/multipart uploads)
  *
@@ -48,7 +50,13 @@ else if ($method == "DELETE") {
 // and not working in a CORS environment
 else if	($method == 'POST') {
     handlePreflightedRequest();
-    signRequest();
+
+    if (isset($_REQUEST["success"])) {
+        verifyFileInS3();
+    }
+    else {
+        signRequest();
+    }
 }
 
 // This will retrieve the "intended" request method.  Normally, this is the
@@ -177,5 +185,32 @@ function sign($stringToSign) {
             $clientPrivateKey,
             true
         ));
+}
+
+function verifyFileInS3() {
+    $bucket = $_POST["bucket"];
+    $key = $_POST["key"];
+
+    // If utilizing CORS, we return a 200 response with the error message in the body
+    // to ensure Fine Uploader can parse the error message in IE9 and IE8,
+    // since XDomainRequest is used on those browsers for CORS requests.  XDomainRequest
+    // does not allow access to the response body for non-success responses.
+    if (getObjectSize($bucket, $key) > 15000000) {
+        // You can safely uncomment this next line if you are not depending on CORS
+        //header("HTTP/1.0 500 Internal Server Error");
+        deleteObject();
+        echo json_encode(array("error" => "File is too big!"));
+    }
+    else {
+        error_log("OK");
+    }
+}
+
+function getObjectSize($bucket, $key) {
+    $objInfo = getS3Client()->headObject(array(
+            'Bucket' => $bucket,
+            'Key' => $key
+        ));
+    return $objInfo['ContentLength'];
 }
 ?>
