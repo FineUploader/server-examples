@@ -28,7 +28,7 @@
     vim index.html
     ```
 
-5. [Enable Fine Uploader](docs.fineuploader.com)
+5. [Enable Fine Uploader](http://docs.fineuploader.com)
 6. Run the server
 
     `python app.py`
