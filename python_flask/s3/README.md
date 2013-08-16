@@ -22,9 +22,11 @@
     
 4. Make your template
 
+    ```bash
     mkdir templates
     touch templates/index.html
     vim index.html
+    ```
 
 5. [Enable Fine Uploader](docs.fineuploader.com)
 6. Run the server
