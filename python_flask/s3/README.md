@@ -18,7 +18,7 @@
 
 3. Get the static files
 
-    http://fineuploader.com/download
+    http://fineuploader.com/downloads
     
 4. Make your template
 
