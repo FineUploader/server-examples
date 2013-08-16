@@ -1,6 +1,8 @@
 # Python + Flask + Amazon S3 + Fine Uploader
 <small>= crazy delicious</small>
 
+> client-side code not included.
+
 ## Instructions
 1. Install dependencies
 
@@ -14,10 +16,21 @@
     export AWS_SERVER_PRIVATE_KEY='keep me secret!'
     ```
 
-3. Run the server
+3. Get the static files
+
+    http://fineuploader.com/download
+    
+4. Make your template
+
+    mkdir templates
+    touch templates/index.html
+    vim index.html
+
+5. [Enable Fine Uploader](docs.fineuploader.com)
+6. Run the server
 
     `python app.py`
 
-4. Enjoy!
+7. Enjoy!
 
 YMMV.
