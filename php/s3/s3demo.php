@@ -93,7 +93,8 @@ function getRequestMethod() {
 
 // Only needed in cross-origin setups
 function handlePreflightedRequest() {
-    header('Access-Control-Allow-Origin: *');
+    // If you are relying on CORS, you will need to adjust the allowed domain here.
+    header('Access-Control-Allow-Origin: http://fineuploader.com');
 }
 
 // Only needed in cross-origin setups
