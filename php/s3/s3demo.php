@@ -219,8 +219,17 @@ function verifyFileInS3() {
         echo json_encode(array("error" => "File is too big!"));
     }
     else {
-        error_log("OK");
+       	echo json_encode(array("tempLink" => getTempLink($bucket, $key)));
     }
+}
+
+// Provide a time-bombed public link to the file.
+function getTempLink($bucket, $key) {
+    $client = getS3Client();
+    $url = "{$bucket}/{$key}";
+    $request = $client->get($url);
+
+    return $client->createPresignedUrl($request, '+15 minutes');
 }
 
 function getObjectSize($bucket, $key) {
