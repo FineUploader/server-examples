@@ -35,8 +35,15 @@ $clientPrivateKey = $_SERVER['AWS_SECRET_KEY'];
 $serverPublicKey = $_SERVER['PARAM1'];
 $serverPrivateKey = $_SERVER['PARAM2'];
 
-$expectedMaxSize = 15000000;
+// The following variables are used when validating the policy document
+// sent by the uploader: 
 $expectedBucketName = "upload.fineuploader.com";
+// $expectedMaxSize is the value you set the sizeLimit property of the 
+// validation option. We assume it is `null` here. If you are performing
+// validation, then change this to match the integer value you specified
+// otherwise your policy document will be invalid.
+// http://docs.fineuploader.com/branch/develop/api/options.html#validation-option
+$expectedMaxSize = 15000000;
 
 $method = getRequestMethod();
 
