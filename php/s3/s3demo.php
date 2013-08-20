@@ -3,8 +3,6 @@
  * PHP Server-Side Example for Fine Uploader S3.
  * Maintained by Widen Enterprises.
  *
- * Note: This is the exact server-side code used by the S3 example
- * on fineuploader.com.
  *
  * This example:
  *  - handles non-CORS environment
