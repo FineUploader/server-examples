@@ -36,7 +36,7 @@ $serverPublicKey = $_SERVER['PARAM1'];
 $serverPrivateKey = $_SERVER['PARAM2'];
 
 $expectedMaxSize = 15000000;
-$expectedBucket = "upload.fineuploader.com";
+$expectedBucketName = "upload.fineuploader.com";
 
 $method = getRequestMethod();
 
@@ -148,9 +148,9 @@ function signRestRequest($headersStr) {
 }
 
 function isValidRestRequest($headersStr) {
-    global $expectedBucket;
+    global $expectedBucketName;
 
-    $pattern = "/\/$expectedBucket\/.+$/";
+    $pattern = "/\/$expectedBucketName\/.+$/";
     preg_match($pattern, $headersStr, $matches);
 
     return count($matches) > 0;
@@ -170,7 +170,7 @@ function signPolicy($policyStr) {
 }
 
 function isPolicyValid($policy) {
-    global $expectedMaxSize, $expectedBucket;
+    global $expectedMaxSize, $expectedBucketName;
 
     $conditions = $policy["conditions"];
     $bucket = null;
@@ -187,7 +187,7 @@ function isPolicyValid($policy) {
         }
     }
 
-    return $bucket == $expectedBucket && $parsedMaxSize == (string)$expectedMaxSize;
+    return $bucket == $expectedBucketName && $parsedMaxSize == (string)$expectedMaxSize;
 }
 
 function sign($stringToSign) {
