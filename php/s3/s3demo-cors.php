@@ -7,8 +7,7 @@
  * on fineuploader.com.
  *
  * This example:
- *  - handles non-CORS environment
- *  - handles size validation and no size validation
+ *  - handles both CORS and non-CORS environments
  *  - handles delete file requests for both DELETE and POST methods
  *  - Performs basic inspections on the policy documents and REST headers before signing them
  *  - Ensures again the file size does not exceed the max (after file is in S3)
@@ -24,7 +23,7 @@
 
 // You can remove these two lines if you are not using Fine Uploader's
 // delete file feature
-require 'aws/aws-autoloader.php';
+require 'aws-autoloader.php';
 use Aws\S3\S3Client;
 
 // These assume you have the associated AWS keys stored in
@@ -41,14 +40,21 @@ $expectedBucketName = "upload.fineuploader.com";
 
 $method = getRequestMethod();
 
+// This first conditional will only ever evaluate to true in a
+// CORS environment
+if ($method == 'OPTIONS') {
+    handlePreflight();
+}
 // This second conditional will only ever evaluate to true if
 // the delete file feature is enabled
-if ($method == "DELETE") {
+else if ($method == "DELETE") {
+    handlePreflightedRequest(); // only needed in a CORS environment
     deleteObject();
 }
 // This is all you really need if not using the delete file feature
 // and not working in a CORS environment
 else if	($method == 'POST') {
+    handlePreflightedRequest();
 
     // Assumes the successEndpoint has a parameter of "success" associated with it,
     // to allow the server to differentiate between a successEndpoint request
@@ -83,6 +89,19 @@ function getRequestMethod() {
     }
 
     return $_SERVER['REQUEST_METHOD'];
+}
+
+// Only needed in cross-origin setups
+function handlePreflightedRequest() {
+    // If you are relying on CORS, you will need to adjust the allowed domain here.
+    header('Access-Control-Allow-Origin: http://fineuploader.com');
+}
+
+// Only needed in cross-origin setups
+function handlePreflight() {
+    handlePreflightedRequest();
+    header('Access-Control-Allow-Methods: POST');
+    header('Access-Control-Allow-Headers: Content-Type');
 }
 
 function getS3Client() {
@@ -168,7 +187,7 @@ function isPolicyValid($policy) {
         }
     }
 
-    return $bucket == $expectedBucketName && (is_null($parsedMaxSize) || $parsedMaxSize == (string)$expectedMaxSize);
+    return $bucket == $expectedBucketName && $parsedMaxSize == (string)$expectedMaxSize;
 }
 
 function sign($stringToSign) {
@@ -195,7 +214,7 @@ function verifyFileInS3() {
     // does not allow access to the response body for non-success responses.
     if (getObjectSize($bucket, $key) > $expectedMaxSize) {
         // You can safely uncomment this next line if you are not depending on CORS
-        header("HTTP/1.0 500 Internal Server Error");
+        //header("HTTP/1.0 500 Internal Server Error");
         deleteObject();
         echo json_encode(array("error" => "File is too big!"));
     }
