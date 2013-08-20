@@ -74,14 +74,6 @@ else if	($method == 'POST') {
 // possible to send a DELETE request.  So, we send a POST with the intended method,
 // DELETE, in a "_method" parameter.
 function getRequestMethod() {
-    global $HTTP_RAW_POST_DATA;
-
-    // This should only evaluate to true if the Content-Type is undefined
-    // or unrecognized, such as when XDomainRequest has been used to
-    // send the request.
-    if(isset($HTTP_RAW_POST_DATA)) {
-    	parse_str($HTTP_RAW_POST_DATA, $_POST);
-    }
 
     if ($_POST['_method'] != null) {
         return $_POST['_method'];
