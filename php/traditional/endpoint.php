@@ -49,11 +49,11 @@ if ($method == "POST") {
 
     // To return a name used for uploaded file you can use the following line.
     $result["uploadName"] = $uploader->getUploadName();
+
+    echo json_encode($result);
 }
 else {
     header("HTTP/1.0 405 Method Not Allowed");
 }
-
-echo json_encode($result);
 
 ?>
