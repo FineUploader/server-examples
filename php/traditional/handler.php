@@ -1,6 +1,11 @@
 <?php
 
-class qqFileUploader {
+/**
+ * Do not use or reference this directly from your client-side code.
+ * Instead, this should be required via the endpoint.php file.
+ */
+
+class UploadHandler {
 
     public $allowedExtensions = array();
     public $sizeLimit = null;
