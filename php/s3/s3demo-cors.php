@@ -55,13 +55,13 @@ if ($method == 'OPTIONS') {
 // This second conditional will only ever evaluate to true if
 // the delete file feature is enabled
 else if ($method == "DELETE") {
-    handlePreflightedRequest(); // only needed in a CORS environment
+    handleCorsRequest(); // only needed in a CORS environment
     deleteObject();
 }
 // This is all you really need if not using the delete file feature
 // and not working in a CORS environment
 else if	($method == 'POST') {
-    handlePreflightedRequest();
+    handleCorsRequest();
 
     // Assumes the successEndpoint has a parameter of "success" associated with it,
     // to allow the server to differentiate between a successEndpoint request
@@ -99,14 +99,14 @@ function getRequestMethod() {
 }
 
 // Only needed in cross-origin setups
-function handlePreflightedRequest() {
+function handleCorsRequest() {
     // If you are relying on CORS, you will need to adjust the allowed domain here.
     header('Access-Control-Allow-Origin: http://fineuploader.com');
 }
 
 // Only needed in cross-origin setups
 function handlePreflight() {
-    handlePreflightedRequest();
+    handleCorsRequest();
     header('Access-Control-Allow-Methods: POST');
     header('Access-Control-Allow-Headers: Content-Type');
 }
