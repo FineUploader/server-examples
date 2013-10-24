@@ -4,8 +4,7 @@ This repository contains server-side examples for users of Widen's Fine Uploader
 for Fine Uploader S3 will appear in a S3 directory under the language of choice.  All other examples assume you are
 uploading files to your own server.
 
-For guidelines useful when integrating your server-side code with Fine Uploader, see the [server-side notes 
-and guidelines readme](https://github.com/Widen/fine-uploader/blob/master/docs/server.md) in the Fine Uploader repository.
+For guidelines useful when integrating your server-side code with Fine Uploader, see the [documentation site](http://docs.fineuploader.com).
 
 <br/>
 #### Support ####
