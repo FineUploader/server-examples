@@ -10,7 +10,10 @@ For guidelines useful when integrating your server-side code with Fine Uploader,
 #### Support ####
 
 ##### Traditional upload examples (upload to your own server)
-Widen only currently supports the PHP and Java examples.  All other examples were provided by third parties.
+Widen supports the following traditional endpoint examples: (all other examples were provided and are supported by third parties)
+* PHP
+* node.js
+* Java
 
 ##### Fine Uploader S3 examples
 Widen supports upload-to-s3 server-side examples in the following languages (in the associated language's S3 subdirectory):
