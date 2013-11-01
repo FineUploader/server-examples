@@ -1,85 +1,231 @@
 /**
- * Node.JS server sample file.
- * 
- * 
+ * NodeJs Server-Side Example for Fine Uploader (traditional endpoints).
+ * Maintained by Widen Enterprises.
  *
- * This code requires external modules, which can be downloaded with the following commands:
- * npm install express
- * npm install node-uuid
- * npm install jade
+ * This example:
+ *  - handles non-CORS environments
+ *  - handles delete file requests assuming the method is DELETE
+ *  - Ensures the file size does not exceed the max
+ *  - Handles chunked upload requests
  *
- * This code assumes that there is a uploads/ directory for storing the uploaded files, and that the fine-uploader code 
- * is available at public/fine-uploader/jquery
- * 
- *
- * Based in part on Felix Gertz <dev@felixgertz.de> original example.
- * Original comments follow:
- * Express handles most of the heavy lifting of handling the multipart form parsing - all we have to do is establish an endpoint
- * to handle the incoming file
- *
- * If you are using NginX as reverse proxy, please set this in your server block:
- * client_max_body_size    200M;
- * 
- * I don't believe the following is true any longer, as all my testing has been on 8000 - so perhaps needs further validation:
- **
- ** You have to run the server endpoint on port 80,
- ** either by an reverse proxy upstream to this script
- **  or by run this script directly on port 80,
- ** because the ajax upload script can not handle port instruction in the action url correctly. :(
- **
- *
- * @Author: Jeremy Dickens <jeremy@offnominal.com> 2013
- * 
+ * Requirements:
+ *  - express (for handling requests)
+ *  - rimraf (for "rm -rf" support)
+ *  - mkdirp (for "mkdir -p" support)
  */
 
-var express = require('express'),
-    fs = require('fs'),
-    util = require('util'),
-    uuid = require('node-uuid'),
-    url = require('url'),
-    app = express();
+var //dependencies
+    express = require("express"),
+    fs = require("fs"),
+    rimraf = require("rimraf"),
+    mkdirp = require("mkdirp"),
+    app = express(),
 
-// Settings
-var settings = {
-    node_port: process.argv[2] || 8000,
-    uploadPath: __dirname + '/uploads/'
-};
-
-app.set('views', __dirname + '/views');
-app.set('view engine', 'jade');
-
-app.use(express.static(__dirname + '/public'));
-
-app.use(express.bodyParser({uploadDir: settings.uploadPath}));
-
-app.get('/', function(request, response) {
-    response.render('index');
-})
-
-app.post('/upload', function(request, response, next) {
-    // the uploadDir is typically used as a temp save location, but we are just going to use the same directory to
-    // store the final file.
-
-    var savePath = settings.uploadPath;
-
-    var fileName = request.files.qqfile.name;
-
-    //after upload, rename the file and respond to Fine Uploader to notify it of success
-    fs.rename(request.files.qqfile.path, savePath + fileName, function(err) {
-	if (err != null) {
-	    console.log('Err: ' + err);
-	    response.send(JSON.stringify({success: false, error: err}), {'Content-Type': 'text/plain'}, 200);
-	} 
-	else {
-	    response.send(JSON.stringify({success: true}), {'Content-Type': 'text/plain'}, 200);
-	    console.log('File Uploaded: ' + savePath + fileName);
-	}
-    })
-    
-});
+    // paths/constants
+    fileInputName = "qqfile",
+    assetsPath = __dirname + "/assets/",
+    placeholdersPath = assetsPath + "placeholders/",
+    uploadedFilesPath = assetsPath + "uploadedFiles/",
+    chunkDirName = "chunks",
+    maxFileSize = 10000000;
 
 
+app.use(express.bodyParser());
+app.listen(8000);
 
-// Starting the express server
-app.listen(settings.node_port, '127.0.0.1');
-console.log("Express server listening on %s:%d for uploads", '127.0.0.1', settings.node_port);
+// routes
+app.use(express.static(__dirname));
+app.use("/fineuploader", express.static(assetsPath));
+app.use("/placeholders", express.static(placeholdersPath));
+app.post("/uploads", onUpload);
+app.delete("/uploads/:uuid", onDeleteFile);
+
+
+function onUpload(req, res) {
+    var partIndex = req.body.qqpartindex;
+
+    // text/plain is required to ensure support for IE9 and older
+    res.set("Content-Type", "text/plain");
+
+    if (partIndex == null) {
+        onSimpleUpload(req, res);
+    }
+    else {
+        onChunkedUpload(req, res);
+    }
+}
+
+function onSimpleUpload(req, res) {
+    var file = req.files[fileInputName],
+        uuid = req.body.qquuid,
+        responseData = {
+            success: false
+        };
+
+    file.name = req.body.qqfilename;
+
+    if (isValid(file.size)) {
+        moveUploadedFile(file, uuid, function() {
+            responseData.success = true;
+            res.send(responseData);
+        },
+        function() {
+            responseData.error = "Problem copying the file!";
+            res.send(responseData);
+        });
+    }
+    else {
+        responseData.error = "Too big!";
+        res.send(responseData);
+    }
+}
+
+function onChunkedUpload(req, res) {
+    var file = req.files[fileInputName],
+        size = parseInt(req.body.qqtotalfilesize),
+        uuid = req.body.qquuid,
+        index = req.body.qqpartindex,
+        totalParts = parseInt(req.body.qqtotalparts),
+        responseData = {
+            success: false
+        };
+
+    file.name = req.body.qqfilename;
+
+    if (isValid(size)) {
+        storeChunk(file, uuid, index, totalParts, function() {
+            if (index < totalParts-1) {
+                responseData.success = true;
+                res.send(responseData);
+            }
+            else {
+                combineChunks(file, uuid, function() {
+                    responseData.success = true;
+                    res.send(responseData);
+                },
+                function() {
+                    responseData.error = "Problem conbining the chunks!";
+                    res.send(responseData);
+                });
+            }
+        },
+        function(reset) {
+            responseData.error = "Problem storing the chunk!";
+            res.send(responseData);
+        });
+    }
+    else {
+        responseData.error = "Too big!";
+        res.send(responseData);
+    }
+}
+
+function onDeleteFile(req, res) {
+    var uuid = req.params.uuid,
+        dirToDelete = uploadedFilesPath + uuid;
+
+    rimraf(dirToDelete, function(error) {
+        if (error) {
+            console.error("Problem deleting file! " + error);
+            res.status(500);
+        }
+
+        res.send();
+    });
+}
+
+function isValid(size) {
+    return size < maxFileSize;
+}
+
+function moveFile(destinationDir, sourceFile, destinationFile, success, failure) {
+    mkdirp(destinationDir, function(error) {
+        var sourceStream, destStream;
+
+        if (error) {
+            console.error("Problem creating directory " + destinationDir + ": " + error);
+            failure();
+        }
+        else {
+            sourceStream = fs.createReadStream(sourceFile);
+            destStream = fs.createWriteStream(destinationFile);
+
+            sourceStream
+                .on("error", function(error) {
+                    console.error("Problem copying file: " + error.stack);
+                    failure();
+                })
+                .on("end", success)
+                .pipe(destStream);
+        }
+    });
+}
+
+function moveUploadedFile(file, uuid, success, failure) {
+    var destinationDir = uploadedFilesPath + uuid + "/",
+        fileDestination = destinationDir + file.name;
+
+    moveFile(destinationDir, file.path, fileDestination, success, failure);
+}
+
+function storeChunk(file, uuid, index, numChunks, success, failure) {
+    var destinationDir = uploadedFilesPath + uuid + "/" + chunkDirName + "/",
+        chunkFilename = getChunkFilename(index, numChunks),
+        fileDestination = destinationDir + chunkFilename;
+
+    moveFile(destinationDir, file.path, fileDestination, success, failure);
+}
+
+function combineChunks(file, uuid, success, failure) {
+    var chunksDir = uploadedFilesPath + uuid + "/" + chunkDirName + "/",
+        destinationDir = uploadedFilesPath + uuid + "/",
+        fileDestination = destinationDir + file.name;
+
+
+    fs.readdir(chunksDir, function(err, fileNames) {
+        var destFileStream;
+
+        if (err) {
+            console.error("Problem listing chunks! " + err);
+            failure();
+        }
+        else {
+            fileNames.sort();
+            destFileStream = fs.createWriteStream(fileDestination, {flags: "a"});
+
+            appendToStream(destFileStream, chunksDir, fileNames, 0, function() {
+                rimraf(chunksDir, function(rimrafError) {
+                    if (rimrafError) {
+                        console.log("Problem deleting chunks dir! " + rimrafError);
+                    }
+                });
+                success();
+            },
+            failure);
+        }
+    });
+}
+
+function appendToStream(destStream, srcDir, srcFilesnames, index, success, failure) {
+    if (index < srcFilesnames.length) {
+        fs.createReadStream(srcDir + srcFilesnames[index])
+            .on("end", function() {
+                appendToStream(destStream, srcDir, srcFilesnames, index+1, success, failure);
+            })
+            .on("error", function(error) {
+                console.error("Problem appending chunk! " + error);
+                failure();
+            })
+            .pipe(destStream, {end: false});
+    }
+    else {
+        success();
+    }
+}
+
+function getChunkFilename(index, count) {
+    var digits = new String(count).length,
+        zeros = new Array(digits + 1).join("0");
+
+    return (zeros + index).slice(-digits);
+}

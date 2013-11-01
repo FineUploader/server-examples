@@ -1,0 +1,10 @@
+{
+  "name" : "fineUploaderNodeExample",
+  "description" : "Fine Uploader NodeJS example",
+  "dependencies" : {
+      "express": "3.x",
+      "rimraf": "2.2.2",
+      "mkdirp": "0.3.5"
+  },
+  "version" : "1.0.0"
+}
