@@ -27,7 +27,7 @@ var //dependencies
     placeholdersPath = assetsPath + "placeholders/",
     uploadedFilesPath = assetsPath + "uploadedFiles/",
     chunkDirName = "chunks",
-    maxFileSize = 10000000;
+    maxFileSize = 0; // in bytes, 0 for unlimited
 
 
 app.use(express.bodyParser());
@@ -75,8 +75,7 @@ function onSimpleUpload(req, res) {
         });
     }
     else {
-        responseData.error = "Too big!";
-        res.send(responseData);
+        failWithTooBigFile(responseData, res);
     }
 }
 
@@ -115,9 +114,14 @@ function onChunkedUpload(req, res) {
         });
     }
     else {
-        responseData.error = "Too big!";
-        res.send(responseData);
+        failWithTooBigFile(responseData, res);
     }
+}
+
+function failWithTooBigFile(responseData, res) {
+    responseData.error = "Too big!";
+    responseData.preventRetry = true;
+    res.send(responseData);
 }
 
 function onDeleteFile(req, res) {
@@ -135,7 +139,7 @@ function onDeleteFile(req, res) {
 }
 
 function isValid(size) {
-    return size < maxFileSize;
+    return maxFileSize === 0 || size < maxFileSize;
 }
 
 function moveFile(destinationDir, sourceFile, destinationFile, success, failure) {
