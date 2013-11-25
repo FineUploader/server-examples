@@ -12,13 +12,13 @@ Namespace Uploader
 
             ' We need to hand IE a little bit differently...
             If Request.Browser.Browser = "IE" And Request.Browser.MajorVersion < 10 Then
-    	    	' We need to hand IE a little bit differently...
-    			Dim myfiles As System.Web.HttpFileCollection = System.Web.HttpContext.Current.Request.Files
-    		    Dim postedFile As System.Web.HttpPostedFile = myfiles(0)
-    	        If Not postedFile.FileName.Equals("") Then
-    	            fStream = postedFile.InputStream
-    	        End If
-    	    End If
+                ' We need to hand IE a little bit differently...
+                Dim myfiles As System.Web.HttpFileCollection = System.Web.HttpContext.Current.Request.Files
+                Dim postedFile As System.Web.HttpPostedFile = myfiles(0)
+                If Not postedFile.FileName.Equals("") Then
+                    fStream = postedFile.InputStream
+                End If
+            End If
 
             Dim fileContents() As Byte = New Byte(fStream.Length - 1) {}
             fStream.Read(fileContents, 0, CType(fStream.Length, Integer))
