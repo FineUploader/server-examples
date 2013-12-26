@@ -59,6 +59,8 @@ def handle_POST(request):
             # and NOT a policy document
             response_data = sign_headers(headers)
         else:
+            if not is_valid_policy(request_payload):
+                return make_response(400, {'invalid': True})
             response_data = sign_policy_document(request_payload)
         response_payload = json.dumps(response_data)
         return make_response(200, response_payload)
