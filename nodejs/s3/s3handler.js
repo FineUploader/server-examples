@@ -93,7 +93,7 @@ function signRestRequest(req, res) {
         res.end(JSON.stringify(jsonResponse));
     }
     else {
-        res.status(500);
+        res.status(400);
         res.end(JSON.stringify({invalid: true}));
     }
 }
@@ -116,7 +116,7 @@ function signPolicy(req, res) {
         res.end(JSON.stringify(jsonResponse));
     }
     else {
-        res.status(500);
+        res.status(400);
         res.end(JSON.stringify({invalid: true}));
     }
 }
@@ -155,7 +155,7 @@ function verifyFileInS3(req, res) {
             res.end(JSON.stringify({error: "Problem querying S3!"}));
         }
         else if (data.ContentLength > expectedMaxSize) {
-            res.status(500);
+            res.status(400);
             res.write(JSON.stringify({error: "Too big!"}));
             deleteFile(req.body.bucket, req.body.key, function(err) {
                 if (err) {
