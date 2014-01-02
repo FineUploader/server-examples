@@ -18,7 +18,7 @@ export AWS_SERVER_PRIVATE_KEY='keep me secret!'
 Modify yo' settings (if needed).
 
 ```bash    
-vim python_django_s3/settings.py
+vim settings.py
 ```
 
 Run yo' server
@@ -29,6 +29,3 @@ python manage.py runserver
 
 Upload some things.
 Relax and bask in glory.
-
-That's what I did; it worked. 
-Your mileage may vary...

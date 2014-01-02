@@ -1,0 +1,8 @@
+# 0.1.0
+
+- First release
+- Delete
+- Chunking
+- Auto-resume/retry
+- MPE Encoded requests only
+- Traditional endpoint only
