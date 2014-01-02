@@ -14,6 +14,7 @@ Widen supports the following traditional endpoint examples: (all other examples 
 * PHP
 * node.js
 * Java
+* Python (Flask & Django)
 
 ##### Fine Uploader S3 examples
 Widen supports upload-to-s3 server-side examples in the following languages (in the associated language's S3 subdirectory):
