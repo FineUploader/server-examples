@@ -61,15 +61,8 @@ class UploadHandler {
             return array('error'=>"Server error. Increase post_max_size and upload_max_filesize to ".$size);
         }
 
-		// is_writable() is not reliable on Windows (http://www.php.net/manual/en/function.is-executable.php#111146)
-		// The following tests if the current OS is Windows and if so, merely checks if the folder is writable;
-		// otherwise, it checks additionally for executable status (like before).
-		
-        $isWin = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
-        $folderInaccessible = ($isWin) ? !is_writable($uploadDirectory) : ( !is_writable($uploadDirectory) && !is_executable($uploadDirectory) );
-
-        if ($folderInaccessible){
-            return array('error' => "Server error. Uploads directory isn't writable" . ((!$isWin) ? " or executable." : "."));
+        if ($this->isInaccessible($uploadDirectory)){
+            return array('error' => "Server error. Uploads directory isn't writable");
         }
 
         if(!isset($_SERVER['CONTENT_TYPE'])) {
@@ -117,6 +110,7 @@ class UploadHandler {
 
         $totalParts = isset($_REQUEST['qqtotalparts']) ? (int)$_REQUEST['qqtotalparts'] : 1;
 
+        $uuid = $_REQUEST['qquuid'];
         if ($totalParts > 1){
 
             $chunksFolder = $this->chunksFolder;
@@ -139,9 +133,13 @@ class UploadHandler {
             // Last chunk saved successfully
             if ($success AND ($totalParts-1 == $partIndex)){
 
-                $target = $this->getUniqueTargetPath($uploadDirectory, $name);
-                $this->uploadName = basename($target);
+                $target = join(DIRECTORY_SEPARATOR, array($uploadDirectory, $uuid, $name));
+                //$target = $this->getUniqueTargetPath($uploadDirectory, $name);
+                $this->uploadName = $uuid.DIRECTORY_SEPARATOR.$name;
 
+                if (!file_exists($target)){
+                    mkdir(dirname($target));
+                }
                 $target = fopen($target, 'wb');
 
                 for ($i=0; $i<$totalParts; $i++){
@@ -159,27 +157,62 @@ class UploadHandler {
 
                 rmdir($targetFolder);
 
-                return array("success" => true);
+                return array("success" => true, "uuid" => $uuid);
 
             }
 
-            return array("success" => true);
+            return array("success" => true, "uuid" => $uuid);
 
         } else {
 
-            $target = $this->getUniqueTargetPath($uploadDirectory, $name);
+            $target = join(DIRECTORY_SEPARATOR, array($uploadDirectory, $uuid, $name));
+            //$target = $this->getUniqueTargetPath($uploadDirectory, $name);
 
             if ($target){
                 $this->uploadName = basename($target);
 
+                if (!is_dir(dirname($target))){
+                    mkdir(dirname($target));
+                }
                 if (move_uploaded_file($file['tmp_name'], $target)){
-                    return array('success'=> true);
+                    return array('success'=> true, "uuid" => $uuid);
                 }
             }
 
             return array('error'=> 'Could not save uploaded file.' .
                 'The upload was cancelled, or server error encountered');
         }
+    }
+
+    /**
+     * Process a delete.
+     * @param string $uploadDirectory Target directory.
+     * @params string $name Overwrites the name of the file.
+     *
+     */
+    public function handleDelete($uploadDirectory, $name=null)
+    {
+        if ($this->isInaccessible($uploadDirectory)) {
+            return array('error' => "Server error. Uploads directory isn't writable" . ((!$isWin) ? " or executable." : "."));
+        }
+
+        $targetFolder = $uploadDirectory;
+        $url = parse_url($_SERVER['REQUEST_URI']);
+        $uuid = $_POST['qquuid'];
+
+        $target = join(DIRECTORY_SEPARATOR, array($targetFolder, $uuid));
+
+        print_r($target);
+        if (is_dir($target)){
+            $this->removeDir($target);
+            return array("success" => true, "uuid" => $uuid);
+        } else {
+            return array("success" => false,
+                "error" => "File not found! Unable to delete.",
+                "path" => $uuid
+            );
+        }
+
     }
 
     /**
@@ -258,7 +291,12 @@ class UploadHandler {
             if ($item == "." || $item == "..")
                 continue;
 
-            unlink($dir.DIRECTORY_SEPARATOR.$item);
+            if (is_dir($item)){
+                removeDir($item);
+            } else {
+                unlink(join(DIRECTORY_SEPARATOR, array($dir, $item)));
+            }
+
         }
         rmdir($dir);
     }
@@ -277,4 +315,24 @@ class UploadHandler {
         }
         return $val;
     }
+
+    /**
+     * Determines whether a directory can be accessed.
+     *
+     * is_writable() is not reliable on Windows
+     *  (http://www.php.net/manual/en/function.is-executable.php#111146)
+     * The following tests if the current OS is Windows and if so, merely
+     * checks if the folder is writable;
+     * otherwise, it checks additionally for executable status (like before).
+     *
+     * @param string $directory The target directory to test access
+     */
+    protected function isInaccessible($directory) {
+        $isWin = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+        $folderInaccessible = ($isWin) ? !is_writable($directory) : ( !is_writable($directory) && !is_executable($directory) );
+        return $folderInaccessible;
+    }
 }
+
+
+
