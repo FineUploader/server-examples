@@ -2,7 +2,8 @@
 
 /**
  * Do not use or reference this directly from your client-side code.
- * Instead, this should be required via the endpoint.php file.
+ * Instead, this should be required via the endpoint.php or endpoint-cors.php
+ * file(s).
  */
 
 class UploadHandler {
@@ -72,7 +73,6 @@ class UploadHandler {
         }
 
         // Get size and name
-
         $file = $_FILES[$this->inputName];
         $size = $file['size'];
 
@@ -81,13 +81,11 @@ class UploadHandler {
         }
 
         // Validate name
-
         if ($name === null || $name === ''){
             return array('error' => 'File name empty.');
         }
 
         // Validate file size
-
         if ($size == 0){
             return array('error' => 'File is empty.');
         }
@@ -97,7 +95,6 @@ class UploadHandler {
         }
 
         // Validate file extension
-
         $pathinfo = pathinfo($name);
         $ext = isset($pathinfo['extension']) ? $pathinfo['extension'] : '';
 
@@ -107,15 +104,14 @@ class UploadHandler {
         }
 
         // Save a chunk
-
         $totalParts = isset($_REQUEST['qqtotalparts']) ? (int)$_REQUEST['qqtotalparts'] : 1;
 
         $uuid = $_REQUEST['qquuid'];
         if ($totalParts > 1){
+        # chunked upload
 
             $chunksFolder = $this->chunksFolder;
             $partIndex = (int)$_REQUEST['qqpartindex'];
-            $uuid = $_REQUEST['qquuid'];
 
             if (!is_writable($chunksFolder) && !is_executable($uploadDirectory)){
                 return array('error' => "Server error. Chunks directory isn't writable or executable.");
@@ -158,12 +154,13 @@ class UploadHandler {
                 rmdir($targetFolder);
 
                 return array("success" => true, "uuid" => $uuid);
-
             }
 
             return array("success" => true, "uuid" => $uuid);
 
-        } else {
+        }
+        else {
+        # non-chunked upload
 
             $target = join(DIRECTORY_SEPARATOR, array($uploadDirectory, $uuid, $name));
             //$target = $this->getUniqueTargetPath($uploadDirectory, $name);
@@ -333,6 +330,3 @@ class UploadHandler {
         return $folderInaccessible;
     }
 }
-
-
-
