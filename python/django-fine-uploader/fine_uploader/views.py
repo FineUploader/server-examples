@@ -19,6 +19,14 @@ logger = logging.getLogger('django')
 # Utils
 ##
 def make_response(status=200, content_type='text/plain', content=None):
+    """ Construct a response to an upload request.
+    Success is indicated by a status of 200 and { "success": true }
+    contained in the content.
+
+    Also, content-type is text/plain by default since IE9 and below chokes
+    on application/json. For CORS environments and IE9 and below, the
+    content-type needs to be text/html.
+    """
     response = HttpResponse()
     response.status_code = status
     response['Content-Type'] = content_type
@@ -31,20 +39,27 @@ def make_response(status=200, content_type='text/plain', content=None):
 ##
 def home(request):
     """ The 'home' page. Returns an HTML page with Fine Uploader code
-    ready to upload.
+    ready to upload. This HTML page should contain your client-side code
+    for instatiating and modifying Fine Uploader.
     """
     return render(request, 'fine_uploader/index.html')
 
 
 class UploadView(View):
     """ View which will handle all upload requests sent by Fine Uploader.
-    See: https://docs.djangoproject.com/en/dev/topics/security/#user-uploaded-content-security"""
+    See: https://docs.djangoproject.com/en/dev/topics/security/#user-uploaded-content-security
+
+    Handles POST and DELETE requests.
+    """
 
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
         return super(UploadView, self).dispatch(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        """A POST request. Validate the form and then handle the upload
+        based ont the POSTed data. Does not handle extra parameters yet.
+        """
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             handle_upload(request.FILES['qqfile'], form.cleaned_data)
@@ -57,6 +72,9 @@ class UploadView(View):
                 }))
 
     def delete(self, request, *args, **kwargs):
+        """A DELETE request. If found, deletes a file with the corresponding
+        UUID from the server's filesystem.
+        """
         qquuid = kwargs.get('qquuid', '')
         if qquuid:
             try:
@@ -75,6 +93,8 @@ class UploadView(View):
             }))
 
 def handle_upload(f, fileattrs):
+    """ Handle a chunked or non-chunked upload.
+    """
     logger.info(fileattrs)
 
     chunked = False
@@ -91,6 +111,7 @@ def handle_upload(f, fileattrs):
     utils.save_upload(f, dest)
     logger.info('Upload saved: %s' % dest)
 
+    # If the last chunk has been sent, combine the parts.
     if chunked and (fileattrs['qqtotalparts'] - 1 == fileattrs['qqpartindex']):
 
         logger.info('Combining chunks: %s' % os.path.dirname(dest))
@@ -103,6 +124,7 @@ def handle_upload(f, fileattrs):
         shutil.rmtree(os.path.dirname(os.path.dirname(dest)))
 
 def handle_deleted_file(uuid):
+    """ Handles a filesystem delete based on UUID."""
     logger.info(uuid)
 
     loc = os.path.join(settings.UPLOAD_DIRECTORY, uuid)

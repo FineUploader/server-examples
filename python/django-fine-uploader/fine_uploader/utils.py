@@ -1,6 +1,12 @@
 import os, os.path, shutil
 
 def combine_chunks(total_parts, total_size, source_folder, dest):
+    """ Combine a chunked file into a whole file again. Goes through each part
+    , in order, and appends that part's bytes to another destination file.
+
+    Chunks are stored in media/chunks
+    Uploads are saved in media/uploads
+    """
 
     if not os.path.exists(os.path.dirname(dest)):
         os.makedirs(os.path.dirname(dest))
@@ -13,6 +19,14 @@ def combine_chunks(total_parts, total_size, source_folder, dest):
 
 
 def save_upload(f, path):
+    """ Save an upload. Django will automatically "chunk" incoming files
+    (even when previously chunked by fine-uploader) to prevent large files
+    from taking up your server's memory. If Django has chunked the file, then
+    write the chunks, otherwise, save as you would normally save a file in
+    Python.
+
+    Uploads are stored in media/uploads
+    """
     if not os.path.exists(os.path.dirname(path)):
         os.makedirs(os.path.dirname(path))
     with open(path, 'wb+') as destination:
