@@ -27,7 +27,7 @@ public class RequestParser
     private boolean generateError;
 
     private int partIndex = -1;
-    private int totalFileSize;
+    private long totalFileSize;
     private int totalParts;
     private String uuid;
     private String originalFilename;
@@ -93,7 +93,7 @@ public class RequestParser
         return partIndex;
     }
 
-    public int getTotalFileSize()
+    public long getTotalFileSize()
     {
         return totalFileSize;
     }
@@ -135,7 +135,7 @@ public class RequestParser
         {
             requestParser.partIndex = Integer.parseInt(partNumStr);
 
-            requestParser.totalFileSize = Integer.parseInt(multipartUploadParser.getParams().get(FILE_SIZE_PARAM));
+            requestParser.totalFileSize = Long.parseLong(multipartUploadParser.getParams().get(FILE_SIZE_PARAM));
             requestParser.totalParts = Integer.parseInt(multipartUploadParser.getParams().get(TOTAL_PARTS_PARAM));
         }
 
@@ -166,7 +166,7 @@ public class RequestParser
         if (partNumStr != null)
         {
             requestParser.partIndex = Integer.parseInt(partNumStr);
-            requestParser.totalFileSize = Integer.parseInt(req.getParameter(FILE_SIZE_PARAM));
+            requestParser.totalFileSize = Long.parseLong(req.getParameter(FILE_SIZE_PARAM));
             requestParser.totalParts = Integer.parseInt(req.getParameter(TOTAL_PARTS_PARAM));
         }
 
