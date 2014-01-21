@@ -182,7 +182,7 @@ public class UploadReceiver extends HttpServlet
         }
     }
 
-    private void assertCombinedFileIsVaid(int totalFileSize, File outputFile, String uuid) throws MergePartsException
+    private void assertCombinedFileIsVaid(long totalFileSize, File outputFile, String uuid) throws MergePartsException
     {
         if (totalFileSize != outputFile.length())
         {
