@@ -23,6 +23,10 @@ Widen supports upload-to-s3 server-side examples in the following languages (in 
 * Java
 * Python
 
+##### Fine Uploader Azure examples
+Widen supports upload-to-azure server-side examples in the following languages (in the associated language's azure subdirectory):
+* C#
+
 It is possible, and quite easy, to write your own server-side code for Fine Uploader S3 in another language.  See
 the documentation for more details.
 
