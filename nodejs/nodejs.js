@@ -157,6 +157,7 @@ function moveFile(destinationDir, sourceFile, destinationFile, success, failure)
             sourceStream
                 .on("error", function(error) {
                     console.error("Problem copying file: " + error.stack);
+                    destStream.end();
                     failure();
                 })
                 .on("end", function(){
@@ -221,6 +222,7 @@ function appendToStream(destStream, srcDir, srcFilesnames, index, success, failu
             })
             .on("error", function(error) {
                 console.error("Problem appending chunk! " + error);
+                destStream.end();
                 failure();
             })
             .pipe(destStream, {end: false});
