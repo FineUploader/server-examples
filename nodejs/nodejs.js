@@ -159,7 +159,10 @@ function moveFile(destinationDir, sourceFile, destinationFile, success, failure)
                     console.error("Problem copying file: " + error.stack);
                     failure();
                 })
-                .on("end", success)
+                .on("end", function(){
+                    destStream.end();
+                    success();
+                })
                 .pipe(destStream);
         }
     });
@@ -223,6 +226,7 @@ function appendToStream(destStream, srcDir, srcFilesnames, index, success, failu
             .pipe(destStream, {end: false});
     }
     else {
+        destStream.end();
         success();
     }
 }
