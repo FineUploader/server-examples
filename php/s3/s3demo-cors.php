@@ -91,7 +91,7 @@ function getRequestMethod() {
     	parse_str($HTTP_RAW_POST_DATA, $_POST);
     }
 
-    if ($_POST['_method'] != null) {
+    if (isset($_POST['_method']) {
         return $_POST['_method'];
     }
 
@@ -135,9 +135,8 @@ function signRequest() {
     $contentAsObject = json_decode($responseBody, true);
     $jsonContent = json_encode($contentAsObject);
 
-    $headersStr = $contentAsObject["headers"];
-    if ($headersStr) {
-        signRestRequest($headersStr);
+    if (!empty($contentAsObject["headers"])) {
+        signRestRequest($contentAsObject["headers"]);
     }
     else {
         signPolicy($jsonContent);
