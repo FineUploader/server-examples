@@ -16,10 +16,10 @@
  *
  * Notes:
  *
- *  Uncomment `expectedMinSize` and `expectedMaxSize` to enable policy doc
- * verification on size. The `validation.minSizeLimit` and
- * `validation.maxSizeLimit` options **must** be set client-side and match
- * the values you set below.
+ *  Change `expectedMinSize` and `expectedMaxSize` from `null` to integers
+ *  to enable policy doc verification on size. The `validation.minSizeLimit`
+ *  and `validation.maxSizeLimit` options **must** be set client-side and
+ *  match the values you set below.
  *
  */
 
@@ -36,10 +36,14 @@ var express = require("express"),
     // Set these two values to match your environment
     expectedBucket = "fineuploadertest",
 
-    // UNCOMMENT TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
+    // CHANGE TO INTEGERS TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
     // (recommended)
+    expectedMinSize = null,
+    expectedMaxSize = null,
+    // EXAMPLES DIRECTLY BELOW:
     //expectedMinSize = 0,
     //expectedMaxSize = 15000000,
+
     s3;
 
 
@@ -159,10 +163,10 @@ function isPolicyValid(policy) {
 
     isValid = bucket === expectedBucket;
 
-    // If expectedMinSize and expectedMax size are defined (see above), then
+    // If expectedMinSize and expectedMax size are not null (see above), then
     // ensure that the client and server have agreed upon the exact same
     // values.
-    if (typeof expectedMinSize !== "undefined" && typeof expectedMaxSize !== 'undefined') {
+    if (expectedMinSize != null && expectedMaxSize != null) {
         isValid = isValid && (parsedMinSize === expectedMinSize.toString())
                           && (parsedMaxSize === expectedMaxSize.toString());
     }
