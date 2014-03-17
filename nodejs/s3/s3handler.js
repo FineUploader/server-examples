@@ -14,6 +14,13 @@
  *  - crypto 0.0.3+ (for signing requests)
  *  - Amazon Node SDK 1.5.0+ (only if utilizing the AWS SDK for deleting files or otherwise examining them)
  *
+ * Notes:
+ *
+ *  Uncomment `expectedMinSize` and `expectedMaxSize` to enable policy doc
+ * verification on size. The `validation.minSizeLimit` and
+ * `validation.maxSizeLimit` options **must** be set client-side and match
+ * the values you set below.
+ *
  */
 
 var express = require("express"),
@@ -21,12 +28,18 @@ var express = require("express"),
     aws = require("aws-sdk"),
     app = express(),
     clientSecretKey = process.env.CLIENT_SECRET_KEY,
+
     // These two keys are only needed if you plan on using the AWS SDK
     serverPublicKey = process.env.SERVER_PUBLIC_KEY,
     serverSecretKey = process.env.SERVER_SECRET_KEY,
+
     // Set these two values to match your environment
     expectedBucket = "fineuploadertest",
-    expectedMaxSize = 15000000,
+
+    // UNCOMMENT TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
+    // (recommended)
+    //expectedMinSize = 0,
+    //expectedMaxSize = 15000000,
     s3;
 
 
@@ -128,21 +141,33 @@ function isValidRestRequest(headerStr) {
 }
 
 // Ensures the policy document associated with a "simple" (non-chunked) request is
-// targeting the correct bucket and the max-size is as expected.
-// Omit the parsedMaxSize-related code if you don't have a max file size.
+// targeting the correct bucket and the min/max-size is as expected.
+// Comment out the expectedMaxSize and expectedMinSize variables near
+// the top of this file to disable size validation on the policy document.
 function isPolicyValid(policy) {
-    var bucket, parsedMaxSize;
+    var bucket, parsedMaxSize, parsedMinSize, isValid;
 
     policy.conditions.forEach(function(condition) {
         if (condition.bucket) {
             bucket = condition.bucket;
         }
         else if (condition instanceof Array && condition[0] === "content-length-range") {
+            parsedMinSize = condition[1];
             parsedMaxSize = condition[2];
         }
     });
 
-    return bucket === expectedBucket && parsedMaxSize === expectedMaxSize.toString();
+    isValid = bucket === expectedBucket;
+
+    // If expectedMinSize and expectedMax size are defined (see above), then
+    // ensure that the client and server have agreed upon the exact same
+    // values.
+    if (typeof expectedMinSize !== "undefined" && typeof expectedMaxSize !== 'undefined') {
+        isValid = isValid && (parsedMinSize === expectedMinSize.toString())
+                          && (parsedMaxSize === expectedMaxSize.toString());
+    }
+
+    return isValid;
 }
 
 // After the file is in S3, make sure it isn't too big.
