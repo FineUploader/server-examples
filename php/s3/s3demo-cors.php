@@ -91,7 +91,7 @@ function getRequestMethod() {
     	parse_str($HTTP_RAW_POST_DATA, $_POST);
     }
 
-    if (isset($_POST['_method']) {
+    if (isset($_POST['_method'])) {
         return $_POST['_method'];
     }
 
