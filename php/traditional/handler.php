@@ -190,7 +190,7 @@ class UploadHandler {
     public function handleDelete($uploadDirectory, $name=null)
     {
         if ($this->isInaccessible($uploadDirectory)) {
-            return array('error' => "Server error. Uploads directory isn't writable" . ((!$isWin) ? " or executable." : "."));
+            return array('error' => "Server error. Uploads directory isn't writable" . ((!$this->isWindows()) ? " or executable." : "."));
         }
 
         $targetFolder = $uploadDirectory;
@@ -325,8 +325,20 @@ class UploadHandler {
      * @param string $directory The target directory to test access
      */
     protected function isInaccessible($directory) {
-        $isWin = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+        $isWin = $this->isWindows();
         $folderInaccessible = ($isWin) ? !is_writable($directory) : ( !is_writable($directory) && !is_executable($directory) );
         return $folderInaccessible;
     }
+    
+    /**
+     * Determines is the OS is Windows or not
+     * 
+     * @return boolean
+     */
+    
+    protected function isWindows() {
+    	$isWin = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+    	return $isWin;
+    }
+    
 }
