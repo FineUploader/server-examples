@@ -289,7 +289,7 @@ class UploadHandler {
                 continue;
 
             if (is_dir($item)){
-                removeDir($item);
+                $this->removeDir($item);
             } else {
                 unlink(join(DIRECTORY_SEPARATOR, array($dir, $item)));
             }
