@@ -316,8 +316,8 @@ class UploadHandler {
     /**
      * Determines whether a directory can be accessed.
      *
-     * is_writable() is not reliable on Windows
-     *  (http://www.php.net/manual/en/function.is-executable.php#111146)
+     * is_executable() is not reliable on Windows prior PHP 5.0.0
+     *  (http://www.php.net/manual/en/function.is-executable.php)
      * The following tests if the current OS is Windows and if so, merely
      * checks if the folder is writable;
      * otherwise, it checks additionally for executable status (like before).
