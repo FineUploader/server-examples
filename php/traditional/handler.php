@@ -131,7 +131,7 @@ class UploadHandler {
 
                 $target = join(DIRECTORY_SEPARATOR, array($uploadDirectory, $uuid, $name));
                 //$target = $this->getUniqueTargetPath($uploadDirectory, $name);
-                $this->uploadName = $uuid.DIRECTORY_SEPARATOR.$name;
+                $this->uploadName = $name;
 
                 if (!file_exists($target)){
                     mkdir(dirname($target));
