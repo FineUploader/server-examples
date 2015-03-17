@@ -199,7 +199,7 @@ class UploadHandler {
 
         $target = join(DIRECTORY_SEPARATOR, array($targetFolder, $uuid));
 
-        print_r($target);
+        // print_r($target);
         if (is_dir($target)){
             $this->removeDir($target);
             return array("success" => true, "uuid" => $uuid);
