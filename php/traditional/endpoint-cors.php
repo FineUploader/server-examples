@@ -5,10 +5,10 @@
  *
  * This example:
  *  - handles chunked and non-chunked requests
+ *  - supports the concurrent chunking feature
  *  - assumes all upload requests are multipart encoded
  *  - handles delete requests
  *  - handles cross-origin environments
- *
  *
  * Follow these steps to get up and running with Fine Uploader in a PHP environment:
  *
@@ -21,6 +21,11 @@
  *
  * 4. Ensure your "chunks" and "files" folders exist and are writable.
  *    "chunks" is only needed if you have enabled the chunking feature client-side.
+ *
+ * 5. If you have chunking enabled in Fine Uploader, you MUST set a value for the `chunking.success.endpoint` option.
+ *    This will be called by Fine Uploader when all chunks for a file have been successfully uploaded, triggering the
+ *    PHP server to combine all parts into one file. This is particularly useful for the concurrent chunking feature,
+ *    but is now required in all cases if you are making use of this PHP example.
  */
 
 // Include the upload handler class
@@ -131,21 +136,29 @@ else if ($method == "POST") {
     handleCorsRequest();
     header("Content-Type: text/plain");
 
-    // Call handleUpload() with the name of the folder, relative to PHP's getcwd()
-    $result = $uploader->handleUpload("files");
+    // Assumes you have a chunking.success.endpoint set to point here with a query parameter of "done".
+    // For example: /myserver/handlers/endpoint.php?done
+    if (isset($_GET["done"])) {
+        $result = $uploader->combineChunks("files");
+    }
+    // Handles upload requests
+    else {
+        // Call handleUpload() with the name of the folder, relative to PHP's getcwd()
+        $result = $uploader->handleUpload("files");
 
-    // To return a name used for uploaded file you can use the following line.
-    $result["uploadName"] = $uploader->getUploadName();
+        // To return a name used for uploaded file you can use the following line.
+        $result["uploadName"] = $uploader->getUploadName();
 
-    // iframe uploads require the content-type to be 'text/html' and
-    // return some JSON along with self-executing javascript (iframe.ss.response)
-    // that will parse the JSON and pass it along to Fine Uploader via
-    // window.postMessage
-    if ($iframeRequest == true) {
-        header("Content-Type: text/html");
-        echo json_encode($result)."<script src='http://10.0.2.2/jquery.fineuploader-4.1.1/iframe.xss.response-4.1.1.js'></script>";
-    } else {
-        echo json_encode($result);
+        // iframe uploads require the content-type to be 'text/html' and
+        // return some JSON along with self-executing javascript (iframe.ss.response)
+        // that will parse the JSON and pass it along to Fine Uploader via
+        // window.postMessage
+        if ($iframeRequest == true) {
+            header("Content-Type: text/html");
+            echo json_encode($result)."<script src='http://{{SERVER_URL}}/{{FINE_UPLOADER_FOLDER}}/iframe.xss.response.js'></script>";
+        } else {
+            echo json_encode($result);
+        }
     }
 }
 else {

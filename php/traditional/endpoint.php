@@ -6,8 +6,9 @@
  *
  * This example:
  *  - handles chunked and non-chunked requests
+ *  - supports the concurrent chunking feature
  *  - assumes all upload requests are multipart encoded
- *
+ *  - supports the delete file feature
  *
  * Follow these steps to get up and running with Fine Uploader in a PHP environment:
  *
@@ -20,6 +21,11 @@
  *
  * 4. Ensure your "chunks" and "files" folders exist and are writable.
  *    "chunks" is only needed if you have enabled the chunking feature client-side.
+ *
+ * 5. If you have chunking enabled in Fine Uploader, you MUST set a value for the `chunking.success.endpoint` option.
+ *    This will be called by Fine Uploader when all chunks for a file have been successfully uploaded, triggering the
+ *    PHP server to combine all parts into one file. This is particularly useful for the concurrent chunking feature,
+ *    but is now required in all cases if you are making use of this PHP example.
  */
 
 // Include the upload handler class
@@ -44,12 +50,25 @@ $method = $_SERVER["REQUEST_METHOD"];
 if ($method == "POST") {
     header("Content-Type: text/plain");
 
-    // Call handleUpload() with the name of the folder, relative to PHP's getcwd()
-    $result = $uploader->handleUpload("files");
+    // Assumes you have a chunking.success.endpoint set to point here with a query parameter of "done".
+    // For example: /myserver/handlers/endpoint.php?done
+    if (isset($_GET["done"])) {
+        $result = $uploader->combineChunks("files");
+    }
+    // Handles upload requests
+    else {
+        // Call handleUpload() with the name of the folder, relative to PHP's getcwd()
+        $result = $uploader->handleUpload("files");
 
-    // To return a name used for uploaded file you can use the following line.
-    $result["uploadName"] = $uploader->getUploadName();
+        // To return a name used for uploaded file you can use the following line.
+        $result["uploadName"] = $uploader->getUploadName();
+    }
 
+    echo json_encode($result);
+}
+// for delete file requests
+else if ($method == "DELETE") {
+    $result = $uploader->handleDelete("files");
     echo json_encode($result);
 }
 else {

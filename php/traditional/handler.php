@@ -40,6 +40,38 @@ class UploadHandler {
         return $this->uploadName;
     }
 
+    public function combineChunks($uploadDirectory) {
+        $uuid = $_POST['qquuid'];
+        $name = $this->getName();
+        $targetFolder = $this->chunksFolder.DIRECTORY_SEPARATOR.$uuid;
+        $totalParts = isset($_REQUEST['qqtotalparts']) ? (int)$_REQUEST['qqtotalparts'] : 1;
+
+        $target = join(DIRECTORY_SEPARATOR, array($uploadDirectory, $uuid, $name));
+        $this->uploadName = $name;
+
+        if (!file_exists($target)){
+            mkdir(dirname($target));
+        }
+        $target = fopen($target, 'wb');
+
+        for ($i=0; $i<$totalParts; $i++){
+            $chunk = fopen($targetFolder.DIRECTORY_SEPARATOR.$i, "rb");
+            stream_copy_to_stream($chunk, $target);
+            fclose($chunk);
+        }
+
+        // Success
+        fclose($target);
+
+        for ($i=0; $i<$totalParts; $i++){
+            unlink($targetFolder.DIRECTORY_SEPARATOR.$i);
+        }
+
+        rmdir($targetFolder);
+
+        return array("success" => true, "uuid" => $uuid);
+    }
+
     /**
      * Process the upload.
      * @param string $uploadDirectory Target directory.
@@ -66,9 +98,14 @@ class UploadHandler {
             return array('error' => "Server error. Uploads directory isn't writable");
         }
 
-        if(!isset($_SERVER['CONTENT_TYPE'])) {
+        $type = $_SERVER['CONTENT_TYPE'];
+        if (isset($_SERVER['HTTP_CONTENT_TYPE'])) {
+            $type = $_SERVER['HTTP_CONTENT_TYPE'];
+        }
+
+        if(!isset($type)) {
             return array('error' => "No files were uploaded.");
-        } else if (strpos(strtolower($_SERVER['CONTENT_TYPE']), 'multipart/') !== 0){
+        } else if (strpos(strtolower($type), 'multipart/') !== 0){
             return array('error' => "Server error. Not a multipart request. Please set forceMultipart to default value (true).");
         }
 
@@ -126,36 +163,6 @@ class UploadHandler {
             $target = $targetFolder.'/'.$partIndex;
             $success = move_uploaded_file($_FILES[$this->inputName]['tmp_name'], $target);
 
-            // Last chunk saved successfully
-            if ($success AND ($totalParts-1 == $partIndex)){
-
-                $target = join(DIRECTORY_SEPARATOR, array($uploadDirectory, $uuid, $name));
-                //$target = $this->getUniqueTargetPath($uploadDirectory, $name);
-                $this->uploadName = $name;
-
-                if (!file_exists($target)){
-                    mkdir(dirname($target));
-                }
-                $target = fopen($target, 'wb');
-
-                for ($i=0; $i<$totalParts; $i++){
-                    $chunk = fopen($targetFolder.DIRECTORY_SEPARATOR.$i, "rb");
-                    stream_copy_to_stream($chunk, $target);
-                    fclose($chunk);
-                }
-
-                // Success
-                fclose($target);
-
-                for ($i=0; $i<$totalParts; $i++){
-                    unlink($targetFolder.DIRECTORY_SEPARATOR.$i);
-                }
-
-                rmdir($targetFolder);
-
-                return array("success" => true, "uuid" => $uuid);
-            }
-
             return array("success" => true, "uuid" => $uuid);
 
         }
@@ -194,8 +201,9 @@ class UploadHandler {
         }
 
         $targetFolder = $uploadDirectory;
-        $url = parse_url($_SERVER['REQUEST_URI']);
-        $uuid = $_POST['qquuid'];
+        $url = parse_url($_SERVER['REQUEST_URI'])['path'];
+        $tokens = explode('/', $url);
+        $uuid = $tokens[sizeof($tokens)-1];
 
         $target = join(DIRECTORY_SEPARATOR, array($targetFolder, $uuid));
 
@@ -205,7 +213,7 @@ class UploadHandler {
             return array("success" => true, "uuid" => $uuid);
         } else {
             return array("success" => false,
-                "error" => "File not found! Unable to delete.",
+                "error" => "File not found! Unable to delete.".$url,
                 "path" => $uuid
             );
         }
@@ -329,16 +337,16 @@ class UploadHandler {
         $folderInaccessible = ($isWin) ? !is_writable($directory) : ( !is_writable($directory) && !is_executable($directory) );
         return $folderInaccessible;
     }
-    
+
     /**
      * Determines is the OS is Windows or not
-     * 
+     *
      * @return boolean
      */
-    
+
     protected function isWindows() {
     	$isWin = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
     	return $isWin;
     }
-    
+
 }

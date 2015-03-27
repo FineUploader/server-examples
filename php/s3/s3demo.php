@@ -12,6 +12,7 @@
  *  - Ensures again the file size does not exceed the max (after file is in S3)
  *  - signs policy documents (simple uploads) and REST requests
  *    (chunked/multipart uploads)
+ *  - returns a thumbnailUrl in the response for older browsers so thumbnails can be displayed next to the file
  *
  * Requirements:
  *  - PHP 5.3 or newer
@@ -60,7 +61,7 @@ else if	($method == 'POST') {
     // and other POST requests (all requests are sent to the same endpoint in this example).
     // This condition is not needed if you don't require a callback on upload success.
     if (isset($_REQUEST["success"])) {
-        verifyFileInS3();
+        verifyFileInS3(shouldIncludeThumbnail());
     }
     else {
         signRequest();
@@ -172,15 +173,15 @@ function sign($stringToSign) {
     global $clientPrivateKey;
 
     return base64_encode(hash_hmac(
-            'sha1',
-            $stringToSign,
-            $clientPrivateKey,
-            true
-        ));
+        'sha1',
+        $stringToSign,
+        $clientPrivateKey,
+        true
+    ));
 }
 
 // This is not needed if you don't require a callback on upload success.
-function verifyFileInS3() {
+function verifyFileInS3($includeThumbnail) {
     global $expectedMaxSize;
 
     $bucket = $_POST["bucket"];
@@ -190,14 +191,21 @@ function verifyFileInS3() {
     // to ensure Fine Uploader can parse the error message in IE9 and IE8,
     // since XDomainRequest is used on those browsers for CORS requests.  XDomainRequest
     // does not allow access to the response body for non-success responses.
-    if (getObjectSize($bucket, $key) > $expectedMaxSize) {
+    if (isset($expectedMaxSize) && getObjectSize($bucket, $key) > $expectedMaxSize) {
         // You can safely uncomment this next line if you are not depending on CORS
         header("HTTP/1.0 500 Internal Server Error");
         deleteObject();
-        echo json_encode(array("error" => "File is too big!"));
+        echo json_encode(array("error" => "File is too big!", "preventRetry" => true));
     }
     else {
-       	echo json_encode(array("tempLink" => getTempLink($bucket, $key)));
+        $link = getTempLink($bucket, $key);
+        $response = array("tempLink" => $link);
+
+        if ($includeThumbnail) {
+            $response["thumbnailUrl"] = $link;
+        }
+
+        echo json_encode($response);
     }
 }
 
@@ -212,9 +220,32 @@ function getTempLink($bucket, $key) {
 
 function getObjectSize($bucket, $key) {
     $objInfo = getS3Client()->headObject(array(
-            'Bucket' => $bucket,
-            'Key' => $key
-        ));
+        'Bucket' => $bucket,
+        'Key' => $key
+    ));
     return $objInfo['ContentLength'];
+}
+
+// Return true if it's likely that the associate file is natively
+// viewable in a browser.  For simplicity, just uses the file extension
+// to make this determination, along with an array of extensions that one
+// would expect all supported browsers are able to render natively.
+function isFileViewableImage($filename) {
+    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    $viewableExtensions = array("jpeg", "jpg", "gif", "png");
+
+    return in_array($ext, $viewableExtensions);
+}
+
+// Returns true if we should attempt to include a link
+// to a thumbnail in the uploadSuccess response.  In it's simplest form
+// (which is our goal here - keep it simple) we only include a link to
+// a viewable image and only if the browser is not capable of generating a client-side preview.
+function shouldIncludeThumbnail() {
+    $filename = $_POST["name"];
+    $isPreviewCapable = $_POST["isBrowserPreviewCapable"] == "true";
+    $isFileViewableImage = isFileViewableImage($filename);
+
+    return !$isPreviewCapable && $isFileViewableImage;
 }
 ?>
