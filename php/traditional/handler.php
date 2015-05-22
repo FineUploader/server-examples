@@ -201,7 +201,7 @@ class UploadHandler {
         }
 
         $targetFolder = $uploadDirectory;
-        $url = parse_url($_SERVER['REQUEST_URI'])['path'];
+        $url = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $tokens = explode('/', $url);
         $uuid = $tokens[sizeof($tokens)-1];
 
