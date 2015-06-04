@@ -296,10 +296,12 @@ class UploadHandler {
             if ($item == "." || $item == "..")
                 continue;
 
-            if (is_dir($item)){
-                $this->removeDir($item);
+            $path = join(DIRECTORY_SEPARATOR, array($dir, $item));
+            
+            if (is_dir($path)){
+                $this->removeDir($path);
             } else {
-                unlink(join(DIRECTORY_SEPARATOR, array($dir, $item)));
+                unlink($path);
             }
 
         }
