@@ -1,12 +1,16 @@
 package fineuploader.s3;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.commons.codec.binary.Hex;
 import sun.misc.BASE64Encoder;
 
 import javax.crypto.Mac;
@@ -16,8 +20,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Java Server-Side Example for Fine Uploader S3.
@@ -28,6 +35,7 @@ import java.security.NoSuchAlgorithmException;
  *  - handles delete file requests via the DELETE method
  *  - signs policy documents (simple uploads) and REST requests
  *    (chunked/multipart uploads)
+ *  - handles both version 2 and version 4 signatures
  *
  * Requirements:
  *  - Java 1.5 or newer
@@ -78,15 +86,26 @@ public class S3Uploads extends HttpServlet
     // policy document or a string that represents multipart upload request headers.
     private void handleSignatureRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException
     {
-        resp.setContentType("application/json");
         resp.setStatus(200);
 
         JsonParser jsonParser = new JsonParser();
         JsonElement contentJson = jsonParser.parse(req.getReader());
         JsonObject jsonObject = contentJson.getAsJsonObject();
-        JsonElement headers = jsonObject.get("headers");
-        JsonObject response = new JsonObject();
+
+        if (req.getQueryString().contains("v4=true")) {
+            handleV4SignatureRequest(jsonObject, contentJson, req, resp);
+        }
+        else {
+            handleV2SignatureRequest(jsonObject, contentJson, req, resp);
+        }
+
+        resp.setStatus(200);
+    }
+
+    private void handleV2SignatureRequest(JsonObject payload, JsonElement contentJson, HttpServletRequest req, HttpServletResponse resp) throws IOException{
         String signature;
+        JsonElement headers = payload.get("headers");
+        JsonObject response = new JsonObject();
 
         try
         {
@@ -110,7 +129,64 @@ public class S3Uploads extends HttpServlet
             // we only need to return the signed value.
             else
             {
-               signature = sign(headers.getAsString());
+                signature = sign(headers.getAsString());
+            }
+
+            response.addProperty("signature", signature);
+            resp.getWriter().write(response.toString());
+        }
+        catch (Exception e)
+        {
+            resp.setStatus(500);
+        }
+    }
+
+    private void handleV4SignatureRequest(JsonObject payload, JsonElement contentJson, HttpServletRequest req, HttpServletResponse resp) throws IOException{
+        String signature = null;
+        JsonElement headers = payload.get("headers");
+        JsonObject response = new JsonObject();
+
+        try
+        {
+            // If this is not a multipart upload-related request, Fine Uploader will send a policy document
+            // as the value of a "policy" property in the request.  In that case, we must base-64 encode
+            // the policy document and then sign it. The will include the base-64 encoded policy and the signed policy document.
+            if (headers == null)
+            {
+                String base64Policy = base64EncodePolicy(contentJson);
+                JsonArray conditions = payload.getAsJsonArray("conditions");
+                String credentialCondition = null;
+                for (int i = 0; i < conditions.size(); i++) {
+                    JsonObject condition = conditions.get(i).getAsJsonObject();
+                    JsonElement value = condition.get("x-amz-credential");
+                    if (value != null) {
+                        credentialCondition = value.getAsString();
+                        break;
+                    }
+                }
+
+                // Validate the policy document to ensure the client hasn't tampered with it.
+                // If it has been tampered with, set this property on the response and set the status to a non-200 value.
+//                response.addProperty("invalid", true);
+
+
+                Pattern pattern = Pattern.compile(".+\\/(.+)\\/(.+)\\/s3\\/aws4_request");
+                Matcher matcher = pattern.matcher(credentialCondition);
+                matcher.matches();
+                signature = getV4Signature(matcher.group(1), matcher.group(2), base64Policy);
+
+                response.addProperty("policy", base64Policy);
+            }
+
+            // If this is a request to sign a multipart upload-related request, we only need to sign the headers,
+            // which are passed as the value of a "headers" property from Fine Uploader.  In this case,
+            // we only need to return the signed value.
+            else
+            {
+                Pattern pattern = Pattern.compile(".+\\n.+\\n(\\d+)\\/(.+)\\/s3\\/.+\\n(.+)");
+                Matcher matcher = pattern.matcher(headers.getAsString());
+                matcher.matches();
+                signature = getV4Signature(matcher.group(1), matcher.group(2), headers.getAsString());
             }
 
             response.addProperty("signature", signature);
@@ -136,6 +212,24 @@ public class S3Uploads extends HttpServlet
 
         System.out.println(String.format("Upload successfully sent to S3!  Bucket: %s, Key: %s, UUID: %s, Filename: %s",
                 bucket, key, uuid, name));
+    }
+
+    private String getV4Signature(String date, String region, String stringToSign) throws Exception {
+        byte[] kSecret = ("AWS4" + AWS_SECRET_KEY).getBytes("UTF8");
+        byte[] kDate    = sha256Encode(date, kSecret);
+        byte[] kRegion  = sha256Encode(region, kDate);
+        byte[] kService = sha256Encode("s3", kRegion);
+        byte[] kSigning = sha256Encode("aws4_request", kService);
+        byte[] kSignature = sha256Encode(stringToSign, kSigning);
+
+        return Hex.encodeHexString(kSignature);
+    }
+
+    private byte[] sha256Encode(String data, byte[] key) throws Exception  {
+        String algorithm="HmacSHA256";
+        Mac mac = Mac.getInstance(algorithm);
+        mac.init(new SecretKeySpec(key, algorithm));
+        return mac.doFinal(data.getBytes("UTF8"));
     }
 
     private String base64EncodePolicy(JsonElement jsonElement) throws UnsupportedEncodingException
