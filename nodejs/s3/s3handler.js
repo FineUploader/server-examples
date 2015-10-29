@@ -8,11 +8,12 @@
  *  - Ensures again the file size does not exceed the max (after file is in S3)
  *  - signs policy documents (simple uploads) and REST requests
  *    (chunked/multipart uploads)
+ *  - supports version 2 and version 4 signatures
  *
  * Requirements:
  *  - express 3.3.5+ (for handling requests)
- *  - crypto 0.0.3+ (for signing requests)
- *  - Amazon Node SDK 1.5.0+ (only if utilizing the AWS SDK for deleting files or otherwise examining them)
+ *  - crypto-js 3.1.5+ (for signing requests)
+ *  - aws-sdk 2.1.10+ (only if utilizing the AWS SDK for deleting files or otherwise examining them)
  *
  * Notes:
  *
@@ -24,25 +25,25 @@
  */
 
 var express = require("express"),
-    crypto = require("crypto"),
+    CryptoJS = require("crypto-js"),
     aws = require("aws-sdk"),
     app = express(),
     clientSecretKey = process.env.CLIENT_SECRET_KEY,
 
-    // These two keys are only needed if you plan on using the AWS SDK
+// These two keys are only needed if you plan on using the AWS SDK
     serverPublicKey = process.env.SERVER_PUBLIC_KEY,
     serverSecretKey = process.env.SERVER_SECRET_KEY,
 
-    // Set these two values to match your environment
+// Set these two values to match your environment
     expectedBucket = "fineuploadertest",
 
-    // CHANGE TO INTEGERS TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
-    // (recommended)
+// CHANGE TO INTEGERS TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
+// (recommended)
     expectedMinSize = null,
     expectedMaxSize = null,
-    // EXAMPLES DIRECTLY BELOW:
-    //expectedMinSize = 0,
-    //expectedMaxSize = 15000000,
+// EXAMPLES DIRECTLY BELOW:
+//expectedMinSize = 0,
+//expectedMaxSize = 15000000,
 
     s3;
 
@@ -96,9 +97,7 @@ function signRequest(req, res) {
 // Signs multipart (chunked) requests.  Omit if you don't want to support chunking.
 function signRestRequest(req, res) {
     var stringToSign = req.body.headers,
-        signature = crypto.createHmac("sha1", clientSecretKey)
-        .update(stringToSign)
-        .digest("base64");
+        signature = req.query.v4 ? signV4RestRequest(stringToSign) : signV2RestRequest(stringToSign);
 
     var jsonResponse = {
         signature: signature
@@ -106,7 +105,7 @@ function signRestRequest(req, res) {
 
     res.setHeader("Content-Type", "application/json");
 
-    if (isValidRestRequest(stringToSign)) {
+    if (req.query.v4 || isValidRestRequest(stringToSign)) {
         res.end(JSON.stringify(jsonResponse));
     }
     else {
@@ -115,12 +114,20 @@ function signRestRequest(req, res) {
     }
 }
 
+function signV2RestRequest(headersStr) {
+    return getV2SignatureKey(clientSecretKey, headersStr);
+}
+
+function signV4RestRequest(headersStr) {
+    var matches = /.+\n.+\n(\d+)\/(.+)\/s3\/.+\n(.+)/.exec(headersStr);
+    return getV4SignatureKey(clientSecretKey, matches[1], matches[2], "s3", headersStr);
+}
+
 // Signs "simple" (non-chunked) upload requests.
 function signPolicy(req, res) {
-    var base64Policy = new Buffer(JSON.stringify(req.body)).toString("base64"),
-        signature = crypto.createHmac("sha1", clientSecretKey)
-        .update(base64Policy)
-        .digest("base64");
+    var policy = req.body,
+        base64Policy = new Buffer(JSON.stringify(policy)).toString("base64"),
+        signature = req.query.v4 ? signV4Policy(policy, base64Policy) : signV2Policy(base64Policy);
 
     var jsonResponse = {
         policy: base64Policy,
@@ -136,6 +143,25 @@ function signPolicy(req, res) {
         res.status(400);
         res.end(JSON.stringify({invalid: true}));
     }
+}
+
+function signV2Policy(base64Policy) {
+    return getV2SignatureKey(clientSecretKey, base64Policy);
+}
+
+function signV4Policy(policy, base64Policy) {
+    var conditions = policy.conditions,
+        credentialCondition;
+
+    for (var i = 0; i < conditions.length; i++) {
+        credentialCondition = conditions[i]["x-amz-credential"];
+        if (credentialCondition != null) {
+            break;
+        }
+    }
+
+    var matches = /.+\/(.+)\/(.+)\/s3\/aws4_request/.exec(credentialCondition)
+    return getV4SignatureKey(clientSecretKey, matches[1], matches[2], "s3", base64Policy);
 }
 
 // Ensures the REST request is targeting the correct bucket.
@@ -168,7 +194,7 @@ function isPolicyValid(policy) {
     // values.
     if (expectedMinSize != null && expectedMaxSize != null) {
         isValid = isValid && (parsedMinSize === expectedMinSize.toString())
-                          && (parsedMaxSize === expectedMaxSize.toString());
+            && (parsedMaxSize === expectedMaxSize.toString());
     }
 
     return isValid;
@@ -203,6 +229,20 @@ function verifyFileInS3(req, res) {
         bucket: req.body.bucket,
         key: req.body.key
     }, headReceived);
+}
+
+function getV2SignatureKey(key, stringToSign) {
+    var words = CryptoJS.HmacSHA1(stringToSign, key);
+    return CryptoJS.enc.Base64.stringify(words);
+}
+
+function getV4SignatureKey(key, dateStamp, regionName, serviceName, stringToSign) {
+    var kDate= CryptoJS.HmacSHA256(dateStamp, "AWS4" + key);
+    var kRegion= CryptoJS.HmacSHA256(regionName, kDate);
+    var kService=CryptoJS.HmacSHA256(serviceName, kRegion);
+    var kSigning= CryptoJS.HmacSHA256("aws4_request", kService);
+
+    return CryptoJS.HmacSHA256(stringToSign, kSigning).toString();
 }
 
 function deleteFile(bucket, key, callback) {
