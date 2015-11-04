@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -183,10 +184,18 @@ public class S3Uploads extends HttpServlet
             // we only need to return the signed value.
             else
             {
-                Pattern pattern = Pattern.compile(".+\\n.+\\n(\\d+)\\/(.+)\\/s3\\/.+\\n(.+)");
+                Pattern pattern = Pattern.compile(".+\\n.+\\n(\\d+)\\/(.+)\\/s3\\/aws4_request\\n(.+)", Pattern.DOTALL);
                 Matcher matcher = pattern.matcher(headers.getAsString());
                 matcher.matches();
-                signature = getV4Signature(matcher.group(1), matcher.group(2), headers.getAsString());
+                String canonicalRequest = matcher.group(3);
+                String hashedCanonicalRequest = hash256(canonicalRequest);
+                String stringToSign = headers.getAsString().replaceAll("(?s)(.+s3\\/aws4_request\\n).+", "$1" + hashedCanonicalRequest);
+
+                // Validate the policy document to ensure the client hasn't tampered with it.
+                // If it has been tampered with, set this property on the response and set the status to a non-200 value.
+//                response.addProperty("invalid", true);
+
+                signature = getV4Signature(matcher.group(1), matcher.group(2), stringToSign);
             }
 
             response.addProperty("signature", signature);
@@ -230,6 +239,18 @@ public class S3Uploads extends HttpServlet
         Mac mac = Mac.getInstance(algorithm);
         mac.init(new SecretKeySpec(key, algorithm));
         return mac.doFinal(data.getBytes("UTF8"));
+    }
+
+    private String hash256(String data) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(data.getBytes());
+        return bytesToHex(md.digest());
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuffer result = new StringBuffer();
+        for (byte byt : bytes) result.append(Integer.toString((byt & 0xff) + 0x100, 16).substring(1));
+        return result.toString();
     }
 
     private String base64EncodePolicy(JsonElement jsonElement) throws UnsupportedEncodingException
