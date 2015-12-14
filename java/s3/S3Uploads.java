@@ -93,7 +93,7 @@ public class S3Uploads extends HttpServlet
         JsonElement contentJson = jsonParser.parse(req.getReader());
         JsonObject jsonObject = contentJson.getAsJsonObject();
 
-        if (req.getQueryString().contains("v4=true")) {
+        if (req.getQueryString() != null && req.getQueryString().contains("v4=true")) {
             handleV4SignatureRequest(jsonObject, contentJson, req, resp);
         }
         else {
