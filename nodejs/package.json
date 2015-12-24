@@ -1,10 +1,11 @@
 {
-  "name" : "fineUploaderNodeExample",
-  "description" : "Fine Uploader NodeJS example",
+  "name" : "fine-uploader-traditional-server",
+  "description" : "Fine Uploader NodeJS example server for traditional server environments",
   "dependencies" : {
-      "express": "3.x",
-      "rimraf": "2.2.2",
-      "mkdirp": "0.3.5"
+    "express": "4.13.3",
+    "mkdirp": "0.5.1",
+    "rimraf": "2.5.0"
   },
+  "files": ["nodejs.js"],
   "version" : "1.0.0"
 }
