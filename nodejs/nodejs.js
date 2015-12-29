@@ -7,40 +7,38 @@
  *  - handles delete file requests assuming the method is DELETE
  *  - Ensures the file size does not exceed the max
  *  - Handles chunked upload requests
- *  - Returns a public URL to allow Fine Uploader to display the image
- *    in the browser if the browser is not capable of generating previews
- *    pre-upload client-side.
  *
  * Requirements:
  *  - express (for handling requests)
  *  - rimraf (for "rm -rf" support)
+ *  - bodyParser (for parsing request payloads)
  *  - mkdirp (for "mkdir -p" support)
  */
 
 var //dependencies
     express = require("express"),
+    bodyParser = require("body-parser"),
     fs = require("fs"),
     rimraf = require("rimraf"),
     mkdirp = require("mkdirp"),
     app = express(),
 
-// paths/constants
-    fileInputName = "qqfile",
-    assetsPath = __dirname + "/assets/",
-    placeholdersPath = assetsPath + "placeholders/",
-    uploadedFilesPath = assetsPath + "uploadedFiles/",
+    // paths/constants
+    fileInputName = process.env.FILE_INPUT_NAME || "qqfile",
+    publicDir = process.env.PUBLIC_DIR,
+    nodeModulesDir = process.env.NODE_MODULES_DIR,
+    uploadedFilesPath = process.env.UPLOADED_FILES_DIR
     chunkDirName = "chunks",
-    maxFileSize = 10000000; // in bytes
+    port = process.env.SERVER_PORT || 8000,
+    maxFileSize = process.env.MAX_FILE_SIZE || 0; // in bytes, 0 for unlimited
 
 
-app.use(express.bodyParser());
-app.listen(8000);
+app.use(bodyParser());
+app.listen(port);
 
 // routes
-app.use(express.static(__dirname));
-app.use("/fineuploader", express.static(assetsPath));
-app.use("/placeholders", express.static(placeholdersPath));
-app.use("/uploads", express.static(uploadedFilesPath));
+app.use(express.static(publicDir));
+app.use("/node_modules", express.static(nodeModulesDir));
 app.post("/uploads", onUpload);
 app.delete("/uploads/:uuid", onDeleteFile);
 
@@ -62,7 +60,6 @@ function onUpload(req, res) {
 function onSimpleUpload(req, res) {
     var file = req.files[fileInputName],
         uuid = req.body.qquuid,
-        sendThumbnailUrl = req.body.sendThumbnailUrl == "true",
         responseData = {
             success: false
         };
@@ -72,11 +69,6 @@ function onSimpleUpload(req, res) {
     if (isValid(file.size)) {
         moveUploadedFile(file, uuid, function() {
                 responseData.success = true;
-
-                if (sendThumbnailUrl) {
-                    responseData.thumbnailUrl = "/uploads/" + uuid + "/" + file.name;
-                }
-
                 res.send(responseData);
             },
             function() {
@@ -95,7 +87,6 @@ function onChunkedUpload(req, res) {
         uuid = req.body.qquuid,
         index = req.body.qqpartindex,
         totalParts = parseInt(req.body.qqtotalparts),
-        sendThumbnailUrl = req.body.sendThumbnailUrl == "true",
         responseData = {
             success: false
         };
@@ -111,11 +102,6 @@ function onChunkedUpload(req, res) {
                 else {
                     combineChunks(file, uuid, function() {
                             responseData.success = true;
-
-                            if (sendThumbnailUrl) {
-                                responseData.thumbnailUrl = "/uploads/" + uuid + "/" + file.name;
-                            }
-
                             res.send(responseData);
                         },
                         function() {
@@ -134,6 +120,12 @@ function onChunkedUpload(req, res) {
     }
 }
 
+function failWithTooBigFile(responseData, res) {
+    responseData.error = "Too big!";
+    responseData.preventRetry = true;
+    res.send(responseData);
+}
+
 function onDeleteFile(req, res) {
     var uuid = req.params.uuid,
         dirToDelete = uploadedFilesPath + uuid;
@@ -148,14 +140,8 @@ function onDeleteFile(req, res) {
     });
 }
 
-function failWithTooBigFile(responseData, res) {
-    responseData.error = "Too big!";
-    responseData.preventRetry = true;
-    res.send(responseData);
-}
-
 function isValid(size) {
-    return size < maxFileSize;
+    return maxFileSize === 0 || size < maxFileSize;
 }
 
 function moveFile(destinationDir, sourceFile, destinationFile, success, failure) {
@@ -173,9 +159,13 @@ function moveFile(destinationDir, sourceFile, destinationFile, success, failure)
             sourceStream
                 .on("error", function(error) {
                     console.error("Problem copying file: " + error.stack);
+                    destStream.end();
                     failure();
                 })
-                .on("end", success)
+                .on("end", function(){
+                    destStream.end();
+                    success();
+                })
                 .pipe(destStream);
         }
     });
@@ -234,11 +224,13 @@ function appendToStream(destStream, srcDir, srcFilesnames, index, success, failu
             })
             .on("error", function(error) {
                 console.error("Problem appending chunk! " + error);
+                destStream.end();
                 failure();
             })
             .pipe(destStream, {end: false});
     }
     else {
+        destStream.end();
         success();
     }
 }
