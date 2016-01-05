@@ -11,29 +11,28 @@
  * Requirements:
  *  - express (for handling requests)
  *  - rimraf (for "rm -rf" support)
- *  - bodyParser (for parsing request payloads)
+ *  - multiparty (for parsing request payloads)
  *  - mkdirp (for "mkdir -p" support)
  */
 
 var //dependencies
     express = require("express"),
-    bodyParser = require("body-parser"),
     fs = require("fs"),
     rimraf = require("rimraf"),
     mkdirp = require("mkdirp"),
-    app = express(),
+    app = express()
+multiparty = require('multiparty'),
 
     // paths/constants
     fileInputName = process.env.FILE_INPUT_NAME || "qqfile",
     publicDir = process.env.PUBLIC_DIR,
     nodeModulesDir = process.env.NODE_MODULES_DIR,
     uploadedFilesPath = process.env.UPLOADED_FILES_DIR
-    chunkDirName = "chunks",
+chunkDirName = "chunks",
     port = process.env.SERVER_PORT || 8000,
     maxFileSize = process.env.MAX_FILE_SIZE || 0; // in bytes, 0 for unlimited
 
 
-app.use(bodyParser());
 app.listen(port);
 
 // routes
@@ -44,27 +43,30 @@ app.delete("/uploads/:uuid", onDeleteFile);
 
 
 function onUpload(req, res) {
-    var partIndex = req.body.qqpartindex;
+    var form = new multiparty.Form();
 
-    // text/plain is required to ensure support for IE9 and older
-    res.set("Content-Type", "text/plain");
+    form.parse(req, function(err, fields, files) {
+        var partIndex = fields.qqpartindex;
 
-    if (partIndex == null) {
-        onSimpleUpload(req, res);
-    }
-    else {
-        onChunkedUpload(req, res);
-    }
+        // text/plain is required to ensure support for IE9 and older
+        res.set("Content-Type", "text/plain");
+
+        if (partIndex == null) {
+            onSimpleUpload(fields, files[fileInputName][0], res);
+        }
+        else {
+            onChunkedUpload(fields, files[fileInputName][0], res);
+        }
+    });
 }
 
-function onSimpleUpload(req, res) {
-    var file = req.files[fileInputName],
-        uuid = req.body.qquuid,
+function onSimpleUpload(fields, file, res) {
+    var uuid = fields.qquuid,
         responseData = {
             success: false
         };
 
-    file.name = req.body.qqfilename;
+    file.name = fields.qqfilename;
 
     if (isValid(file.size)) {
         moveUploadedFile(file, uuid, function() {
@@ -81,17 +83,16 @@ function onSimpleUpload(req, res) {
     }
 }
 
-function onChunkedUpload(req, res) {
-    var file = req.files[fileInputName],
-        size = parseInt(req.body.qqtotalfilesize),
-        uuid = req.body.qquuid,
-        index = req.body.qqpartindex,
-        totalParts = parseInt(req.body.qqtotalparts),
+function onChunkedUpload(fields, file, res) {
+    var size = parseInt(fields.qqtotalfilesize),
+        uuid = fields.qquuid,
+        index = fields.qqpartindex,
+        totalParts = parseInt(fields.qqtotalparts),
         responseData = {
             success: false
         };
 
-    file.name = req.body.qqfilename;
+    file.name = fields.qqfilename;
 
     if (isValid(size)) {
         storeChunk(file, uuid, index, totalParts, function() {
@@ -145,6 +146,7 @@ function isValid(size) {
 }
 
 function moveFile(destinationDir, sourceFile, destinationFile, success, failure) {
+    console.log(arguments)
     mkdirp(destinationDir, function(error) {
         var sourceStream, destStream;
 
