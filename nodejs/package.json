@@ -9,5 +9,5 @@
     "rimraf": "2.5.0"
   },
   "files": ["nodejs.js"],
-  "version" : "3.0.1"
+  "version" : "3.0.2"
 }

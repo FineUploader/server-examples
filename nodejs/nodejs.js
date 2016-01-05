@@ -146,7 +146,6 @@ function isValid(size) {
 }
 
 function moveFile(destinationDir, sourceFile, destinationFile, success, failure) {
-    console.log(arguments)
     mkdirp(destinationDir, function(error) {
         var sourceStream, destStream;
 
