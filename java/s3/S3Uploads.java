@@ -1,17 +1,15 @@
 package fineuploader.s3;
 
-import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.util.BinaryUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.codec.binary.Hex;
-import sun.misc.BASE64Encoder;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -20,7 +18,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -256,7 +253,7 @@ public class S3Uploads extends HttpServlet
     private String base64EncodePolicy(JsonElement jsonElement) throws UnsupportedEncodingException
     {
         String policyJsonStr = jsonElement.toString();
-        String base64Encoded = (new BASE64Encoder()).encode(policyJsonStr.getBytes("UTF-8")).replaceAll("\n","").replaceAll("\r", "");
+        String base64Encoded = BinaryUtils.toBase64 (policyJsonStr.getBytes("UTF-8"));
 
         return base64Encoded;
     }
@@ -265,7 +262,7 @@ public class S3Uploads extends HttpServlet
     {
         Mac hmac = Mac.getInstance("HmacSHA1");
         hmac.init(new SecretKeySpec(AWS_SECRET_KEY.getBytes("UTF-8"), "HmacSHA1"));
-        String signature = (new BASE64Encoder()).encode(hmac.doFinal(toSign.getBytes("UTF-8"))).replaceAll("\n", "");
+        String signature = BinaryUtils.toBase64 (hmac.doFinal(toSign.getBytes("UTF-8")));
 
         return signature;
     }
