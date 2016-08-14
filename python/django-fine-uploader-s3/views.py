@@ -11,7 +11,7 @@ try:
     from boto.s3.connection import Key, S3Connection
     boto.set_stream_logger('boto')
     S3 = S3Connection(settings.AWS_SERVER_PUBLIC_KEY, settings.AWS_SERVER_SECRET_KEY)
-except ImportError, e:
+except ImportError:
     print("Could not import boto, the Amazon SDK for Python.")
     print("Deleting files will not work.")
     print("Install boto with")
@@ -51,7 +51,7 @@ def handle_POST(request):
     if request.POST.get('success', None):
         return make_response(200)
     else:
-        request_payload = json.loads(request.body)
+        request_payload = json.loads(request.body.decode())
         headers = request_payload.get('headers', None)
         if headers:
             # The presence of the 'headers' property in the request payload 
@@ -90,7 +90,8 @@ def make_response(status=200, content=None):
 
 def is_valid_policy(policy_document):
     """ Verify the policy document has not been tampered with client-side
-    before sending it off. 
+    before sending it off.
+     NOTE: settings.AWS_MAX_SIZE must be a string.
     """
     #bucket = settings.AWS_EXPECTED_BUCKET
     #parsed_max_size = settings.AWS_MAX_SIZE
@@ -110,15 +111,15 @@ def sign_policy_document(policy_document):
     """ Sign and return the policy doucument for a simple upload.
     http://aws.amazon.com/articles/1434/#signyours3postform
     """
-    policy = base64.b64encode(json.dumps(policy_document))
-    signature = base64.b64encode(hmac.new(settings.AWS_CLIENT_SECRET_KEY, policy, hashlib.sha1).digest())
+    policy = base64.b64encode(json.dumps(policy_document).encode())
+    signature = base64.b64encode(hmac.new(settings.AWS_CLIENT_SECRET_KEY.encode(), policy, hashlib.sha1).digest())
     return {
-        'policy': policy,
-        'signature': signature
+        'policy': policy.decode(),
+        'signature': signature.decode()
     }
 
 def sign_headers(headers):
     """ Sign and return the headers for a chunked upload. """
     return {
-        'signature': base64.b64encode(hmac.new(settings.AWS_CLIENT_SECRET_KEY, headers, hashlib.sha1).digest())
+        'signature': base64.b64encode(hmac.new(settings.AWS_CLIENT_SECRET_KEY.encode(), headers, hashlib.sha1).digest())
     }
