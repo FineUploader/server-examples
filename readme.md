@@ -1,5 +1,5 @@
 # Server-Side Examples for the Widen Fine Uploader Javascript Library #
-[![Freenode](https://img.shields.io/badge/chat-on%20freenode-brightgreen.svg)](irc://chat.freenode.net/#fineuploader)
+[![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
 This repository contains server-side examples for users of Widen's Fine Uploader javascript library.  Server side examples
 for Fine Uploader S3 will appear in a S3 directory under the language of choice.  All other examples assume you are
