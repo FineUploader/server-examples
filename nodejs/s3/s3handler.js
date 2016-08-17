@@ -165,7 +165,7 @@ function signV4Policy(policy, base64Policy) {
         }
     }
 
-    var matches = /.+\/(.+)\/(.+)\/s3\/aws4_request/.exec(credentialCondition)
+    var matches = /.+\/(.+)\/(.+)\/s3\/aws4_request/.exec(credentialCondition);
     return getV4SignatureKey(clientSecretKey, matches[1], matches[2], "s3", base64Policy);
 }
 
