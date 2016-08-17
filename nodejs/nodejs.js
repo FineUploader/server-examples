@@ -15,20 +15,20 @@
  *  - mkdirp (for "mkdir -p" support)
  */
 
-var //dependencies
-    express = require("express"),
+// Dependencies
+var express = require("express"),
     fs = require("fs"),
     rimraf = require("rimraf"),
     mkdirp = require("mkdirp"),
-    app = express()
-multiparty = require('multiparty'),
+    multiparty = require('multiparty'),
+    app = express(),
 
     // paths/constants
     fileInputName = process.env.FILE_INPUT_NAME || "qqfile",
     publicDir = process.env.PUBLIC_DIR,
     nodeModulesDir = process.env.NODE_MODULES_DIR,
-    uploadedFilesPath = process.env.UPLOADED_FILES_DIR
-chunkDirName = "chunks",
+    uploadedFilesPath = process.env.UPLOADED_FILES_DIR,
+    chunkDirName = "chunks",
     port = process.env.SERVER_PORT || 8000,
     maxFileSize = process.env.MAX_FILE_SIZE || 0; // in bytes, 0 for unlimited
 
@@ -96,25 +96,25 @@ function onChunkedUpload(fields, file, res) {
 
     if (isValid(size)) {
         storeChunk(file, uuid, index, totalParts, function() {
-                if (index < totalParts-1) {
-                    responseData.success = true;
-                    res.send(responseData);
-                }
-                else {
-                    combineChunks(file, uuid, function() {
-                            responseData.success = true;
-                            res.send(responseData);
-                        },
-                        function() {
-                            responseData.error = "Problem conbining the chunks!";
-                            res.send(responseData);
-                        });
-                }
-            },
-            function(reset) {
-                responseData.error = "Problem storing the chunk!";
+            if (index < totalParts - 1) {
+                responseData.success = true;
                 res.send(responseData);
-            });
+            }
+            else {
+                combineChunks(file, uuid, function() {
+                        responseData.success = true;
+                        res.send(responseData);
+                    },
+                    function() {
+                        responseData.error = "Problem conbining the chunks!";
+                        res.send(responseData);
+                    });
+            }
+        },
+        function(reset) {
+            responseData.error = "Problem storing the chunk!";
+            res.send(responseData);
+        });
     }
     else {
         failWithTooBigFile(responseData, res);
@@ -205,14 +205,14 @@ function combineChunks(file, uuid, success, failure) {
             destFileStream = fs.createWriteStream(fileDestination, {flags: "a"});
 
             appendToStream(destFileStream, chunksDir, fileNames, 0, function() {
-                    rimraf(chunksDir, function(rimrafError) {
-                        if (rimrafError) {
-                            console.log("Problem deleting chunks dir! " + rimrafError);
-                        }
-                    });
-                    success();
-                },
-                failure);
+                rimraf(chunksDir, function(rimrafError) {
+                    if (rimrafError) {
+                        console.log("Problem deleting chunks dir! " + rimrafError);
+                    }
+                });
+                success();
+            },
+            failure);
         }
     });
 }
@@ -221,7 +221,7 @@ function appendToStream(destStream, srcDir, srcFilesnames, index, success, failu
     if (index < srcFilesnames.length) {
         fs.createReadStream(srcDir + srcFilesnames[index])
             .on("end", function() {
-                appendToStream(destStream, srcDir, srcFilesnames, index+1, success, failure);
+                appendToStream(destStream, srcDir, srcFilesnames, index + 1, success, failure);
             })
             .on("error", function(error) {
                 console.error("Problem appending chunk! " + error);

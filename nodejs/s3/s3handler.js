@@ -30,21 +30,21 @@ var express = require("express"),
     app = express(),
     clientSecretKey = process.env.CLIENT_SECRET_KEY,
 
-// These two keys are only needed if you plan on using the AWS SDK
+    // These two keys are only needed if you plan on using the AWS SDK
     serverPublicKey = process.env.SERVER_PUBLIC_KEY,
     serverSecretKey = process.env.SERVER_SECRET_KEY,
 
-// Set these two values to match your environment
+    // Set these two values to match your environment
     expectedBucket = "fineuploadertest",
     expectedHostname = "fineuploadertest.s3.amazonaws.com",
 
-// CHANGE TO INTEGERS TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
-// (recommended)
+    // CHANGE TO INTEGERS TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
+    // (recommended)
     expectedMinSize = null,
     expectedMaxSize = null,
-// EXAMPLES DIRECTLY BELOW:
-//expectedMinSize = 0,
-//expectedMaxSize = 15000000,
+    // EXAMPLES DIRECTLY BELOW:
+    //expectedMinSize = 0,
+    //expectedMaxSize = 15000000,
 
     s3;
 
@@ -64,7 +64,7 @@ app.listen(8000);
 // Handles all signature requests and the success request FU S3 sends after the file is in S3
 // You will need to adjust these paths/conditions based on your setup.
 app.post("/s3handler", function(req, res) {
-    if (req.query.success !== undefined) {
+    if (typeof req.query.success !== "undefined") {
         verifyFileInS3(req, res);
     }
     else {
@@ -246,10 +246,10 @@ function getV2SignatureKey(key, stringToSign) {
 }
 
 function getV4SignatureKey(key, dateStamp, regionName, serviceName, stringToSign) {
-    var kDate= CryptoJS.HmacSHA256(dateStamp, "AWS4" + key);
-    var kRegion= CryptoJS.HmacSHA256(regionName, kDate);
-    var kService=CryptoJS.HmacSHA256(serviceName, kRegion);
-    var kSigning= CryptoJS.HmacSHA256("aws4_request", kService);
+    var kDate = CryptoJS.HmacSHA256(dateStamp, "AWS4" + key),
+        kRegion = CryptoJS.HmacSHA256(regionName, kDate),
+        kService = CryptoJS.HmacSHA256(serviceName, kRegion),
+        kSigning = CryptoJS.HmacSHA256("aws4_request", kService);
 
     return CryptoJS.HmacSHA256(stringToSign, kSigning).toString();
 }
