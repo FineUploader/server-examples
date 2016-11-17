@@ -102,7 +102,7 @@ def handle_upload(f, fileattrs):
     dest = os.path.join(dest_folder, fileattrs['qqfilename'])
 
     # Chunked
-    if int(fileattrs['qqtotalparts']) > 1:
+    if fileattrs.get('qqtotalparts') and int(fileattrs['qqtotalparts']) > 1:
         chunked = True
         dest_folder = os.path.join(settings.CHUNKS_DIRECTORY, fileattrs['qquuid'])
         dest = os.path.join(dest_folder, fileattrs['qqfilename'], str(fileattrs['qqpartindex']))
