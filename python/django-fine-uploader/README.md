@@ -1,4 +1,4 @@
-ls# Fine Uploader Django Traditional Example
+# Fine Uploader Django Traditional Example
 
 
 ## Supported Features
