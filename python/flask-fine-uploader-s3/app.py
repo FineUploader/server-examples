@@ -38,6 +38,7 @@ def sign_policy(policy):
 
 def sign_headers(headers):
     """ Sign and return the headers for a chunked upload. """
+    headers = bytearray(headers, 'utf-8')  # hmac doesn't want unicode
     return {
         'signature': base64.b64encode(hmac.new(
             app.config.get('AWS_CLIENT_SECRET_KEY'), headers, hashlib.sha1).
