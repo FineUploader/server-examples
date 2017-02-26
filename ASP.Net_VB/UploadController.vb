@@ -8,31 +8,22 @@ Namespace Uploader
         <HttpPost()> _
         Function Upload(ByVal uploadFile As String) As String
             On Error GoTo upload_error
-            Dim strm As Stream = Request.InputStream
-            Dim br As BinaryReader = New BinaryReader(strm)
-            Dim fileContents() As Byte = {}
-            Const ChunkSize As Integer = 1024 * 1024
+            Dim fStream As Stream = Request.InputStream
 
- ' We need to hand IE a little bit differently...
-            If Request.Browser.Browser = "IE" Then
+            ' We need to hand IE a little bit differently...
+            If Request.Browser.Browser = "IE" And Request.Browser.MajorVersion < 10 Then
+                ' We need to hand IE a little bit differently...
                 Dim myfiles As System.Web.HttpFileCollection = System.Web.HttpContext.Current.Request.Files
                 Dim postedFile As System.Web.HttpPostedFile = myfiles(0)
                 If Not postedFile.FileName.Equals("") Then
-                    Dim fn As String = System.IO.Path.GetFileName(postedFile.FileName)
-                    br = New BinaryReader(postedFile.InputStream)
-                    uploadFile = fn
+                    fStream = postedFile.InputStream
                 End If
             End If
 
-' Nor have the binary reader on the IE file input Stream. Back to normal...
-            Do While br.BaseStream.Position < br.BaseStream.Length - 1
-                Dim b(ChunkSize - 1) As Byte
-                Dim ReadLen As Integer = br.Read(b, 0, ChunkSize)
-                Dim dummy() As Byte = fileContents.Concat(b).ToArray()
-                fileContents = dummy
-                dummy = Nothing
-            Loop
-
+            Dim fileContents() As Byte = New Byte(fStream.Length - 1) {}
+            fStream.Read(fileContents, 0, CType(fStream.Length, Integer))
+            fStream.Close()
+            fStream.Dispose()
 
             ' You now have all the bytes from the uploaded file in 'FileContents'
 
