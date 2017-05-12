@@ -47,6 +47,8 @@ var express = require("express"),
     //expectedMinSize = 0,
     //expectedMaxSize = 15000000,
 
+    port = process.env.PORT || 8000,
+
     s3;
 
 
@@ -60,7 +62,7 @@ s3 = new aws.S3();
 
 app.use(bodyParser.json());
 app.use(express.static(__dirname)); //only needed if serving static content as well
-app.listen(8000);
+app.listen(port);
 
 // Handles all signature requests and the success request FU S3 sends after the file is in S3
 // You will need to adjust these paths/conditions based on your setup.
