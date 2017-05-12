@@ -27,6 +27,7 @@
 var express = require("express"),
     CryptoJS = require("crypto-js"),
     aws = require("aws-sdk"),
+    bodyParser = require('body-parser'),
     app = express(),
     clientSecretKey = process.env.CLIENT_SECRET_KEY,
 
@@ -57,7 +58,7 @@ aws.config.update({
 s3 = new aws.S3();
 
 
-app.use(express.bodyParser());
+app.use(bodyParser.json());
 app.use(express.static(__dirname)); //only needed if serving static content as well
 app.listen(8000);
 
