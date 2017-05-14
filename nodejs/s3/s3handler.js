@@ -218,7 +218,7 @@ function verifyFileInS3(req, res) {
             console.log(err);
             res.end(JSON.stringify({error: "Problem querying S3!"}));
         }
-        else if (data.ContentLength > expectedMaxSize) {
+        else if (expectedMaxSize != null && data.ContentLength > expectedMaxSize) {
             res.status(400);
             res.write(JSON.stringify({error: "Too big!"}));
             deleteFile(req.body.bucket, req.body.key, function(err) {
