@@ -36,7 +36,7 @@ var express = require("express"),
     serverSecretKey = process.env.SERVER_SECRET_KEY,
 
     // Set these two values to match your environment
-    expectedBucket = "fineuploadertest",
+    expectedBucket = process.env.EXPECTED_BUCKET,
     expectedHostname = "fineuploadertest.s3.amazonaws.com",
 
     // Set this to your CORS origin. Secure by default.
@@ -225,17 +225,26 @@ function isPolicyValid(policy) {
         }
     });
 
-    isValid = bucket === expectedBucket;
+    if (bucket !== expectedBucket) {
+      console.log("ERROR: policy bucket '" + bucket + "' does not match expected bucket '" + expectedBucket + "'");
+      return false;
+    }
 
     // If expectedMinSize and expectedMax size are not null (see above), then
     // ensure that the client and server have agreed upon the exact same
     // values.
-    if (expectedMinSize != null && expectedMaxSize != null) {
-        isValid = isValid && (parsedMinSize === expectedMinSize.toString())
-            && (parsedMaxSize === expectedMaxSize.toString());
+    if (expectedMinSize !== null && expectedMaxSize !== null) {
+        if (parsedMinSize !== expectedMinSize.toString()) {
+          console.log("ERROR: policy min size '" + parsedMinSize + "' does not match expected min size '" + expectedMinSize.toString() + "'");
+          return false;
+        }
+        if (parsedMaxSize !== expectedMaxSize.toString()) {
+          console.log("ERROR: policy max size '" + parsedMaxSize + "' does not match expected max size '" + expectedMaxSize.toString() + "'");
+          return false;
+        }
     }
 
-    return isValid;
+    return true;
 }
 
 // After the file is in S3, make sure it isn't too big.
