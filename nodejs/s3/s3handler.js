@@ -66,7 +66,6 @@ s3 = new aws.S3();
 
 
 app.use(bodyParser.json());
-app.use(express.static(__dirname)); //only needed if serving static content as well
 app.listen(port);
 debug(`s3handler listening on port ${port}`);
 
