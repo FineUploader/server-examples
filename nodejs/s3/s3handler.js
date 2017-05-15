@@ -39,6 +39,9 @@ var express = require("express"),
     expectedBucket = "fineuploadertest",
     expectedHostname = "fineuploadertest.s3.amazonaws.com",
 
+    // Set this to your CORS origin. Secure by default.
+    accessControlAllowOrigin = process.env.ACCESS_CONTROL_ALLOW_ORIGIN,
+
     // CHANGE TO INTEGERS TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
     // (recommended)
     expectedMinSize = null,
@@ -67,6 +70,15 @@ app.use(express.static(__dirname)); //only needed if serving static content as w
 app.listen(port);
 debug(`s3handler listening on port ${port}`);
 
+app.options("/*", function(req, res, next){
+    debug("Accepting OPTIONS to /s3handler");
+    if (accessControlAllowOrigin) {
+      res.header('Access-Control-Allow-Origin', accessControlAllowOrigin);
+    }
+    res.header('Access-Control-Allow-Methods', 'POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Cache-Control, Content-Type, Authorization, Content-Length, X-Requested-With');
+    res.sendStatus(200);
+});
 
 // Handles all signature requests and the success request FU S3 sends after the file is in S3
 // You will need to adjust these paths/conditions based on your setup.
