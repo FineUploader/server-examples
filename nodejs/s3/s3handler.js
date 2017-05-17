@@ -65,6 +65,13 @@ if (!expectedBucket) {
 if (!expectedHostname) {
     console.log('WARNING: Chunking will be disabled. Please set environment variable EXPECTED_HOSTNAME');
 }
+if (!serverPublicKey) {
+    console.log('WARNING: AWS SDK will be disabled. Please set environment variable SERVER_PUBLIC_KEY');
+}
+if (!serverSecretKey) {
+    console.log('WARNING: AWS SDK will be disabled. Please set environment variable SERVER_SECRET_KEY');
+}
+
 
 // Init S3, given your server-side keys.  Only needed if using the AWS SDK.
 aws.config.update({
@@ -326,6 +333,9 @@ function deleteFile(bucket, key, callback) {
 
 function callS3(type, spec, callback) {
     debug("callS3()");
+    if (!serverPublicKey || !serverSecretKey) {
+        throw new Error('AWS SDK disabled. Please set environment variable SERVER_PUBLIC_KEY and SERVER_SECRET_KEY');
+    }
     s3[type + "Object"]({
         Bucket: spec.bucket,
         Key: spec.key
