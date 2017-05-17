@@ -71,9 +71,7 @@ debug(`s3handler listening on port ${port}`);
 
 app.options("/*", function(req, res, next){
     debug("Accepting OPTIONS to /s3handler");
-    if (accessControlAllowOrigin) {
-      res.header('Access-Control-Allow-Origin', accessControlAllowOrigin);
-    }
+    addAccessControlAllowOrigin(res);
     res.header('Access-Control-Allow-Methods', 'POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Cache-Control, Content-Type, Authorization, Content-Length, X-Requested-With');
     res.sendStatus(200);
@@ -83,6 +81,7 @@ app.options("/*", function(req, res, next){
 // You will need to adjust these paths/conditions based on your setup.
 app.post("/s3handler", function(req, res) {
     debug("Accepting POST to /s3handler");
+    addAccessControlAllowOrigin(res);
     if (typeof req.query.success !== "undefined") {
         verifyFileInS3(req, res);
     }
@@ -95,6 +94,7 @@ app.post("/s3handler", function(req, res) {
 // Omit if you don't want to support this feature.
 app.delete("/s3handler/*", function(req, res) {
     debug("Accepting DELETE to /s3handler");
+    addAccessControlAllowOrigin(res);
     deleteFile(req.query.bucket, req.query.key, function(err) {
         if (err) {
             console.log("Problem deleting file: " + err);
@@ -104,6 +104,13 @@ app.delete("/s3handler/*", function(req, res) {
         res.end();
     });
 });
+
+// Adds the Access-Control-Allow-Origin, if configured
+function addAccessControlAllowOrigin(res) {
+    if (accessControlAllowOrigin) {
+      res.header('Access-Control-Allow-Origin', accessControlAllowOrigin);
+    }
+}
 
 // Signs any requests.  Delegate to a more specific signer based on type of request.
 function signRequest(req, res) {
