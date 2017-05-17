@@ -56,6 +56,9 @@ var express = require("express"),
 
     s3;
 
+if (!clientSecretKey) {
+    throw new Error('Environment variable CLIENT_SECRET_KEY must be set');
+}
 
 // Init S3, given your server-side keys.  Only needed if using the AWS SDK.
 aws.config.update({
