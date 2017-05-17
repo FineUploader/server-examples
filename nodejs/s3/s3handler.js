@@ -106,7 +106,6 @@ app.post("/s3handler", function(req, res) {
 // Handles the standard DELETE (file) request sent by Fine Uploader S3.
 // Omit if you don't want to support this feature.
 app.delete("/s3handler/*", function(req, res) {
-    debug("Accepting DELETE to /s3handler");
     deleteFile(req.query.bucket, req.query.key, function(err) {
         if (err) {
             console.log("Problem deleting file: " + err);
