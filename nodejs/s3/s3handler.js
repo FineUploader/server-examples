@@ -87,7 +87,6 @@ app.listen(port);
 debug(`s3handler listening on port ${port}`);
 
 app.options("/*", function(req, res, next){
-    debug("Accepting OPTIONS to /s3handler");
     res.header('Access-Control-Allow-Methods', 'POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Cache-Control, Content-Type, Authorization, Content-Length, X-Requested-With');
     res.sendStatus(200);
@@ -96,7 +95,6 @@ app.options("/*", function(req, res, next){
 // Handles all signature requests and the success request FU S3 sends after the file is in S3
 // You will need to adjust these paths/conditions based on your setup.
 app.post("/s3handler", function(req, res) {
-    debug("Accepting POST to /s3handler");
     if (typeof req.query.success !== "undefined") {
         verifyFileInS3(req, res);
     }
@@ -129,7 +127,6 @@ function addAccessControlAllowOrigin(req, res, next) {
 
 // Signs any requests.  Delegate to a more specific signer based on type of request.
 function signRequest(req, res) {
-    debug("signRequest()");
     if (req.body.headers) {
         signRestRequest(req, res);
     }
@@ -140,7 +137,6 @@ function signRequest(req, res) {
 
 // Signs multipart (chunked) requests.  Omit if you don't want to support chunking.
 function signRestRequest(req, res) {
-    debug("signRestRequest()");
     var version = req.query.v4 ? 4 : 2,
         stringToSign = req.body.headers,
         signature = version === 4 ? signV4RestRequest(stringToSign) : signV2RestRequest(stringToSign);
@@ -161,12 +157,10 @@ function signRestRequest(req, res) {
 }
 
 function signV2RestRequest(headersStr) {
-    debug("signV2RestRequest()");
     return getV2SignatureKey(clientSecretKey, headersStr);
 }
 
 function signV4RestRequest(headersStr) {
-    debug("signV4RestRequest()");
     var matches = /.+\n.+\n(\d+)\/(.+)\/s3\/aws4_request\n([\s\S]+)/.exec(headersStr),
         hashedCanonicalRequest = CryptoJS.SHA256(matches[3]),
         stringToSign = headersStr.replace(/(.+s3\/aws4_request\n)[\s\S]+/, '$1' + hashedCanonicalRequest);
@@ -176,7 +170,6 @@ function signV4RestRequest(headersStr) {
 
 // Signs "simple" (non-chunked) upload requests.
 function signPolicy(req, res) {
-    debug("signPolicy()");
     var policy = req.body,
         base64Policy = new Buffer(JSON.stringify(policy)).toString("base64"),
         signature = req.query.v4 ? signV4Policy(policy, base64Policy) : signV2Policy(base64Policy);
@@ -198,12 +191,10 @@ function signPolicy(req, res) {
 }
 
 function signV2Policy(base64Policy) {
-    debug("signV2Policy()");
     return getV2SignatureKey(clientSecretKey, base64Policy);
 }
 
 function signV4Policy(policy, base64Policy) {
-    debug("signV4Policy()");
     var conditions = policy.conditions,
         credentialCondition;
 
@@ -221,7 +212,6 @@ function signV4Policy(policy, base64Policy) {
 // Ensures the REST request is targeting the correct bucket.
 // Omit if you don't want to support chunking.
 function isValidRestRequest(headerStr, version) {
-    debug("isValidRestRequest()");
     if (!expectedHostname) {
       console.log("ERROR: expectedHostname not set, unable to validate rest request");
       return false;
@@ -238,7 +228,6 @@ function isValidRestRequest(headerStr, version) {
 // Comment out the expectedMaxSize and expectedMinSize variables near
 // the top of this file to disable size validation on the policy document.
 function isPolicyValid(policy) {
-    debug("isPolicyValid()");
     var bucket, parsedMaxSize, parsedMinSize, isValid;
 
     policy.conditions.forEach(function(condition) {
@@ -276,9 +265,7 @@ function isPolicyValid(policy) {
 // After the file is in S3, make sure it isn't too big.
 // Omit if you don't have a max file size, or add more logic as required.
 function verifyFileInS3(req, res) {
-    debug("verifyFileInS3()");
     function headReceived(err, data) {
-        debug("headReceived()");
         if (err) {
             res.status(500);
             console.log(err);
@@ -307,13 +294,11 @@ function verifyFileInS3(req, res) {
 }
 
 function getV2SignatureKey(key, stringToSign) {
-    debug("getV2SignatureKey()");
     var words = CryptoJS.HmacSHA1(stringToSign, key);
     return CryptoJS.enc.Base64.stringify(words);
 }
 
 function getV4SignatureKey(key, dateStamp, regionName, serviceName, stringToSign) {
-    debug("getV4SignatureKey()");
     var kDate = CryptoJS.HmacSHA256(dateStamp, "AWS4" + key),
         kRegion = CryptoJS.HmacSHA256(regionName, kDate),
         kService = CryptoJS.HmacSHA256(serviceName, kRegion),
@@ -323,7 +308,6 @@ function getV4SignatureKey(key, dateStamp, regionName, serviceName, stringToSign
 }
 
 function deleteFile(bucket, key, callback) {
-    debug("deleteFile()");
     callS3("delete", {
         bucket: bucket,
         key: key
@@ -331,7 +315,6 @@ function deleteFile(bucket, key, callback) {
 }
 
 function callS3(type, spec, callback) {
-    debug("callS3()");
     if (!serverPublicKey || !serverSecretKey) {
         throw new Error('AWS SDK disabled. Please set environment variable SERVER_PUBLIC_KEY and SERVER_SECRET_KEY');
     }
