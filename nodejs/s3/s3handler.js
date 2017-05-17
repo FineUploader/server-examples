@@ -37,7 +37,7 @@ var express = require("express"),
 
     // Set these two values to match your environment
     expectedBucket = process.env.EXPECTED_BUCKET,
-    expectedHostname = "fineuploadertest.s3.amazonaws.com",
+    expectedHostname = process.env.EXPECTED_HOSTNAME, // OPTIONAL, only needed for REST requests
 
     // Set this to your CORS origin. Secure by default.
     accessControlAllowOrigin = process.env.ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -61,6 +61,9 @@ if (!clientSecretKey) {
 }
 if (!expectedBucket) {
     throw new Error('Environment variable EXPECTED_BUCKET must be set');
+}
+if (!expectedHostname) {
+    console.log('WARNING: Chunking will be disabled. Please set environment variable EXPECTED_HOSTNAME');
 }
 
 // Init S3, given your server-side keys.  Only needed if using the AWS SDK.
@@ -213,6 +216,10 @@ function signV4Policy(policy, base64Policy) {
 // Omit if you don't want to support chunking.
 function isValidRestRequest(headerStr, version) {
     debug("isValidRestRequest()");
+    if (!expectedHostname) {
+      console.log("ERROR: expectedHostname not set, unable to validate rest request");
+      return false;
+    }
     if (version === 4) {
         return new RegExp("host:" + expectedHostname).exec(headerStr) != null;
     }
