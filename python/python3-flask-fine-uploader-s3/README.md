@@ -44,29 +44,34 @@ It works out of the box, but you should read the docs on how to run [flask apps]
 * pip 3
   `sudo apt-get install python3-pip`
 
+(or via homebrew et.al.)
 
 ## Setup
 
 Consider `$S3FLASK` as the folder containing this `README.md` file.
 
-1. Clone/unpack the archive and cd into root (`$S3FLASK`)
+1. Clone/unpack this archive/repository and cd into `server-examples/python/python3-flask-fine-uploader-s3`
+(referred to as `$S3FLASK` after this point)
 2. Add the client side code:
   ```bash
-  git clone https://github.com/FineUploader/fine-uploader.git
-  cd fine-uploader
+  mkdir static
+  curl -sSL https://github.com/FineUploader/fine-uploader/archive/master.tar.gz | tar -zx
+  cd fine-uploader-master
   npm install
   # See note below for CEPH
   make build
-  cp _build/s3.*.js* $S3FLASK/static/.
-  cp _build/fine-uploader-new.css $S3FLASK/static/.
-  cp _build/*.gif $S3FLASK/static/.
+  cp _build/s3.*.js* ../static/.
+  cp _build/fine-uploader-new.css ../static/.
+  cp _build/*.gif ../static/.
+  cd ..
   ```
 3. Install the dependencies:  
   `pip3 install -r requirements.txt [--user]`
-4. Copy and environment variables in [`p3s3f.env`](#p3s3fenv) (set permissions accordingly)
+4. Set environment variables in [`p3s3f.env`](#p3s3fenv), see link for details.
 5. Configure the bucket with basic CORS rules, see [`basic_cors.xml`](basic_cors.xml):  
   `s3cmd setcors basic_cors.xml s3://$AWS_DEST_BUCKET`
-6. Update [`client_conf.js`](#client_confjs) with relevant values and link into `static` folder
+6. Update [`client_conf.js`](#client_confjs) with relevant values and link into `static`
+folder.  See link for details.
 7. Run the app (like this to ensure env doesn't leak):  
     `bash -c 'source my_p3s3f.env && ./s3-sign-srv.py'`
 8. Visit `http[s]://localhost:5000` (dependent on config of `p3s3f.env`)
@@ -111,7 +116,7 @@ Further information is included in the file as comments.
 
 ### `p3s3f.env`
 
-Recommend: `cp p3s3f.env my_p3s3f.env`
+Recommend: `cp p3s3f.env my_p3s3f.env` (set permissions accordingly)
 
 Contains variables needed by the signing server.  This file has annotation and is
 relatively self explanatory with the exception of `P3S3F_EXAMPLE_ALLOW_*`.
