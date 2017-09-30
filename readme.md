@@ -1,6 +1,3 @@
-This fork is created to provide a better and correct example of fine-uploader server side nodejs example 
-
-
 # Server-Side Examples for the Widen Fine Uploader Javascript Library #
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 

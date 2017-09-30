@@ -44,6 +44,7 @@ app.delete("/uploads/:uuid", onDeleteFile);
 
 
 /*
+Issue:
    In case of concurrent chunking, first all chunks are stored into a folder,
    then a write operation is performed and finally I success request is sent
    back. In async mode, this write operation and sending request to server is
