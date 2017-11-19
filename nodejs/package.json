@@ -3,11 +3,12 @@
   "description" : "Fine Uploader NodeJS example server for traditional server environments",
   "dependencies" : {
     "body-parser": "1.14.2",
+    "cors": "^2.8.4",
     "express": "4.13.3",
     "mkdirp": "0.5.1",
     "multiparty": "4.1.2",
     "rimraf": "2.5.0"
   },
   "files": ["nodejs.js"],
-  "version" : "3.0.3"
+  "version": "3.0.4"
 }
