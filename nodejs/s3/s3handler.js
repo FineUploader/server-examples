@@ -27,6 +27,7 @@
 var express = require("express"),
     CryptoJS = require("crypto-js"),
     aws = require("aws-sdk"),
+    bodyParser = require('body-parser'),
     app = express(),
     clientSecretKey = process.env.CLIENT_SECRET_KEY,
 
@@ -35,8 +36,11 @@ var express = require("express"),
     serverSecretKey = process.env.SERVER_SECRET_KEY,
 
     // Set these two values to match your environment
-    expectedBucket = "fineuploadertest",
-    expectedHostname = "fineuploadertest.s3.amazonaws.com",
+    expectedBucket = process.env.EXPECTED_BUCKET,
+    expectedHostname = process.env.EXPECTED_HOSTNAME, // OPTIONAL, only needed for REST requests
+
+    // Set this to your CORS origin. Secure by default.
+    accessControlAllowOrigin = process.env.ACCESS_CONTROL_ALLOW_ORIGIN,
 
     // CHANGE TO INTEGERS TO ENABLE POLICY DOCUMENT VERIFICATION ON FILE SIZE
     // (recommended)
@@ -46,7 +50,27 @@ var express = require("express"),
     //expectedMinSize = 0,
     //expectedMaxSize = 15000000,
 
+    port = process.env.PORT || 8000,
+
+    enableDebug = true,
+
     s3;
+
+if (!clientSecretKey) {
+    throw new Error('Environment variable CLIENT_SECRET_KEY must be set');
+}
+if (!expectedBucket) {
+    throw new Error('Environment variable EXPECTED_BUCKET must be set');
+}
+if (!expectedHostname) {
+    console.log('WARNING: Chunking will be disabled. Please set environment variable EXPECTED_HOSTNAME');
+}
+if (!serverPublicKey) {
+    console.log('WARNING: AWS SDK will be disabled. Please set environment variable SERVER_PUBLIC_KEY');
+}
+if (!serverSecretKey) {
+    console.log('WARNING: AWS SDK will be disabled. Please set environment variable SERVER_SECRET_KEY');
+}
 
 
 // Init S3, given your server-side keys.  Only needed if using the AWS SDK.
@@ -57,9 +81,16 @@ aws.config.update({
 s3 = new aws.S3();
 
 
-app.use(express.bodyParser());
-app.use(express.static(__dirname)); //only needed if serving static content as well
-app.listen(8000);
+app.use(bodyParser.json());
+app.use(addAccessControlAllowOrigin);
+app.listen(port);
+debug(`s3handler listening on port ${port}`);
+
+app.options("/*", function(req, res, next){
+    res.header('Access-Control-Allow-Methods', 'POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Cache-Control, Content-Type, Authorization, Content-Length, X-Requested-With');
+    res.sendStatus(200);
+});
 
 // Handles all signature requests and the success request FU S3 sends after the file is in S3
 // You will need to adjust these paths/conditions based on your setup.
@@ -84,6 +115,14 @@ app.delete("/s3handler/*", function(req, res) {
         res.end();
     });
 });
+
+// Adds the Access-Control-Allow-Origin, if configured
+function addAccessControlAllowOrigin(req, res, next) {
+    if (accessControlAllowOrigin) {
+      res.header('Access-Control-Allow-Origin', accessControlAllowOrigin);
+    }
+    next();
+}
 
 // Signs any requests.  Delegate to a more specific signer based on type of request.
 function signRequest(req, res) {
@@ -172,6 +211,10 @@ function signV4Policy(policy, base64Policy) {
 // Ensures the REST request is targeting the correct bucket.
 // Omit if you don't want to support chunking.
 function isValidRestRequest(headerStr, version) {
+    if (!expectedHostname) {
+      console.log("ERROR: expectedHostname not set, unable to validate rest request");
+      return false;
+    }
     if (version === 4) {
         return new RegExp("host:" + expectedHostname).exec(headerStr) != null;
     }
@@ -196,17 +239,26 @@ function isPolicyValid(policy) {
         }
     });
 
-    isValid = bucket === expectedBucket;
+    if (bucket !== expectedBucket) {
+      console.log("ERROR: policy bucket '" + bucket + "' does not match expected bucket '" + expectedBucket + "'");
+      return false;
+    }
 
     // If expectedMinSize and expectedMax size are not null (see above), then
     // ensure that the client and server have agreed upon the exact same
     // values.
-    if (expectedMinSize != null && expectedMaxSize != null) {
-        isValid = isValid && (parsedMinSize === expectedMinSize.toString())
-            && (parsedMaxSize === expectedMaxSize.toString());
+    if (expectedMinSize !== null && expectedMaxSize !== null) {
+        if (parsedMinSize !== expectedMinSize.toString()) {
+          console.log("ERROR: policy min size '" + parsedMinSize + "' does not match expected min size '" + expectedMinSize.toString() + "'");
+          return false;
+        }
+        if (parsedMaxSize !== expectedMaxSize.toString()) {
+          console.log("ERROR: policy max size '" + parsedMaxSize + "' does not match expected max size '" + expectedMaxSize.toString() + "'");
+          return false;
+        }
     }
 
-    return isValid;
+    return true;
 }
 
 // After the file is in S3, make sure it isn't too big.
@@ -262,8 +314,17 @@ function deleteFile(bucket, key, callback) {
 }
 
 function callS3(type, spec, callback) {
+    if (!serverPublicKey || !serverSecretKey) {
+        throw new Error('AWS SDK disabled. Please set environment variable SERVER_PUBLIC_KEY and SERVER_SECRET_KEY');
+    }
     s3[type + "Object"]({
         Bucket: spec.bucket,
         Key: spec.key
     }, callback)
+}
+
+function debug(message) {
+  if (enableDebug) {
+    console.log(`DEBUG: ${message}`);
+  }
 }

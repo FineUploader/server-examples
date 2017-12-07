@@ -1,0 +1,14 @@
+{
+  "name": "fine-uploader-s3-server",
+  "description": "Fine Uploader NodeJS example server for s3 server environments",
+  "dependencies": {
+    "aws-sdk": "^2.50.0",
+    "body-parser": "^1.14.2",
+    "crypto-js": "^3.1.9-1",
+    "express": "^4.13.3"
+  },
+  "files": [
+    "s3handler.js"
+  ],
+  "version": "3.0.3"
+}
