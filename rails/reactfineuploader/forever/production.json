@@ -1,0 +1,7 @@
+{
+  "uid": "rwr-node-server",
+  "append": true,
+  "script": "node_server.js",
+  "workingDir": "./",
+  "sourceDir": "app/react",
+}
