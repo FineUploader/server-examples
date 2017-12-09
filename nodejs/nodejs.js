@@ -22,12 +22,13 @@ var express = require("express"),
     mkdirp = require("mkdirp"),
     multiparty = require('multiparty'),
     app = express(),
+    cors = require('cors')
 
     // paths/constants
     fileInputName = process.env.FILE_INPUT_NAME || "qqfile",
-    publicDir = process.env.PUBLIC_DIR,
-    nodeModulesDir = process.env.NODE_MODULES_DIR,
-    uploadedFilesPath = process.env.UPLOADED_FILES_DIR,
+    publicDir = process.env.PUBLIC_DIR || './public',
+    nodeModulesDir = process.env.NODE_MODULES_DIR || './node_modules',
+    uploadedFilesPath = process.env.UPLOADED_FILES_DIR || './public/',
     chunkDirName = "chunks",
     port = process.env.SERVER_PORT || 8000,
     maxFileSize = process.env.MAX_FILE_SIZE || 0; // in bytes, 0 for unlimited
@@ -35,6 +36,7 @@ var express = require("express"),
 
 app.listen(port);
 
+app.use(cors());
 // routes
 app.use(express.static(publicDir));
 app.use("/node_modules", express.static(nodeModulesDir));
