@@ -39,8 +39,49 @@ app.listen(port);
 app.use(express.static(publicDir));
 app.use("/node_modules", express.static(nodeModulesDir));
 app.post("/uploads", onUpload);
+app.post("/uploads/chunksdone", onChunksDone());
 app.delete("/uploads/:uuid", onDeleteFile);
 
+
+/*
+Issue:
+   In case of concurrent chunking, first all chunks are stored into a folder,
+   then a write operation is performed and finally I success request is sent
+   back. In async mode, this write operation and sending request to server is
+   not in sync. Therefore, many a times, you will havea request sent to the
+   server with an incomplete file (chunks not properly combined).
+
+   FineUploader after sending all the chunks and getting a stored success request,
+   can send a post request to another route "/uploads/chunksdone" to know whether
+   the process is complete. This feature can be used to solve the problem explained
+   in the above paragraph. This is a personal fork just to cater this issue.
+
+ */
+
+function onChunksDone(req, res) {
+    /*
+    Payload for chunking success POST.
+    req.body = {
+        qquuid: the UUID of the underlying file.
+        qqfilename: the name of the underlying file.
+        qqtotalfilesize: the size, in bytes, of the underlying file.
+        qqtotalparts: the total number of parts that make up the underlying file.
+    }
+     */
+    var file = req.body;
+    var uuid = req.body.qquuid;
+
+    // call the combineChunks here to resolve the mentioned issue.
+    combineChunks(file, uuid, function() {
+            responseData.success = true;
+            res.send(responseData);
+        },
+        function() {
+            responseData.error = "Problem conbining the chunks!";
+            res.send(responseData);
+        });
+
+}
 
 function onUpload(req, res) {
     var form = new multiparty.Form();
@@ -101,14 +142,15 @@ function onChunkedUpload(fields, file, res) {
                 res.send(responseData);
             }
             else {
-                combineChunks(file, uuid, function() {
-                        responseData.success = true;
-                        res.send(responseData);
-                    },
-                    function() {
-                        responseData.error = "Problem conbining the chunks!";
-                        res.send(responseData);
-                    });
+
+                /*
+                Just send a chunks stored success request here. This will
+                trigger fine uploader to send a POST request to
+                "/uploads/chunksdone" route.
+                 */
+                responseData.success = true;
+                res.send(responseData);
+
             }
         },
         function(reset) {
